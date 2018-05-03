@@ -11,7 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProximityMatch
+namespace ProximityMatchApp
 {
     class Program
     {
@@ -19,26 +19,26 @@ namespace ProximityMatch
         {
             IList<Car> carList = new List<Car>();
             /* Adding some data to the list. */
-            carList.Add(new Car() { refno = "car#1", odometer = 0, year = 2018, price = 30 });
-            carList.Add(new Car() { refno = "car#2", odometer = 0, year = 2018, price = 25 });
-            carList.Add(new Car() { refno = "car#3", odometer = 0, year = 2018, price = 50 });
-            carList.Add(new Car() { refno = "car#4", odometer = 1, year = 2018, price = 40 });
-            carList.Add(new Car() { refno = "car#5", odometer = 10, year = 2015, price = 30 });
-            carList.Add(new Car() { refno = "car#6", odometer = 30, year = 2016, price = 25 });
-            carList.Add(new Car() { refno = "car#7", odometer = 0, year = 2017, price = 50 });
-            carList.Add(new Car() { refno = "car#8", odometer = 70, year = 2010, price = 10 });
-            carList.Add(new Car() { refno = "car#9", odometer = 0, year = 2018, price = 22 });
-            carList.Add(new Car() { refno = "car#10", odometer = 5, year = 2017, price = 45 });
-            carList.Add(new Car() { refno = "car#11", odometer = 0, year = 2018, price = 35 });
-            carList.Add(new Car() { refno = "car#12", odometer = 2, year = 2017, price = 40 });
-            carList.Add(new Car() { refno = "car#13", odometer = 10, year = 2015, price = 21 });
-            carList.Add(new Car() { refno = "car#14", odometer = 8, year = 2016, price = 25 });
-            carList.Add(new Car() { refno = "car#15", odometer = 3, year = 2017, price = 35 });
-            carList.Add(new Car() { refno = "car#16", odometer = 60, year = 2011, price = 11 });
-            carList.Add(new Car() { refno = "car#17", odometer = 60, year = 2014, price = 11 });
-            carList.Add(new Car() { refno = "car#18", odometer = 35, year = 2016, price = 22 });
-            carList.Add(new Car() { refno = "car#19", odometer = 0, year = 2017, price = 45 });
-            carList.Add(new Car() { refno = "car#20", odometer = 20, year = 2013, price = 20 });
+            carList.Add(new Car() { refno = "car#1", xaxis = 0, yaxis = 2018, zaxis = 30 });
+            carList.Add(new Car() { refno = "car#2", xaxis = 0, yaxis = 2018, zaxis = 25 });
+            carList.Add(new Car() { refno = "car#3", xaxis = 0, yaxis = 2018, zaxis = 50 });
+            carList.Add(new Car() { refno = "car#4", xaxis = 1, yaxis = 2018, zaxis = 40 });
+            carList.Add(new Car() { refno = "car#5", xaxis = 10, yaxis = 2015, zaxis = 30 });
+            carList.Add(new Car() { refno = "car#6", xaxis = 30, yaxis = 2016, zaxis = 25 });
+            carList.Add(new Car() { refno = "car#7", xaxis = 0, yaxis = 2017, zaxis = 50 });
+            carList.Add(new Car() { refno = "car#8", xaxis = 70, yaxis = 2010, zaxis = 10 });
+            carList.Add(new Car() { refno = "car#9", xaxis = 0, yaxis = 2018, zaxis = 22 });
+            carList.Add(new Car() { refno = "car#10", xaxis = 5, yaxis = 2017, zaxis = 45 });
+            carList.Add(new Car() { refno = "car#11", xaxis = 0, yaxis = 2018, zaxis = 35 });
+            carList.Add(new Car() { refno = "car#12", xaxis = 2, yaxis = 2017, zaxis = 40 });
+            carList.Add(new Car() { refno = "car#13", xaxis = 10, yaxis = 2015, zaxis = 21 });
+            carList.Add(new Car() { refno = "car#14", xaxis = 8, yaxis = 2016, zaxis = 25 });
+            carList.Add(new Car() { refno = "car#15", xaxis = 3, yaxis = 2017, zaxis = 35 });
+            carList.Add(new Car() { refno = "car#16", xaxis = 60, yaxis = 2011, zaxis = 11 });
+            carList.Add(new Car() { refno = "car#17", xaxis = 60, yaxis = 2014, zaxis = 11 });
+            carList.Add(new Car() { refno = "car#18", xaxis = 35, yaxis = 2016, zaxis = 22 });
+            carList.Add(new Car() { refno = "car#19", xaxis = 0, yaxis = 2017, zaxis = 45 });
+            carList.Add(new Car() { refno = "car#20", xaxis = 20, yaxis = 2013, zaxis = 20 });
 
             Graph gp = new Graph(In: carList);
             
@@ -61,9 +61,9 @@ namespace ProximityMatch
     public class Car
     {
         public string refno { get; set; }
-        public double odometer { get; set; } // x - coordinate
-        public double year { get; set; } // y - coordinate
-        public double price { get; set; } // z - coordinate
+        public double xaxis { get; set; } // x - coordinate
+        public double yaxis { get; set; } // y - coordinate
+        public double zaxis { get; set; } // z - coordinate
         private Tuple<double, double, double> coordinate;
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace ProximityMatch
         /// </summary>
         public void SetCoordinate()
         {
-            coordinate = new Tuple<double, double, double>(odometer, year, price);
+            coordinate = new Tuple<double, double, double>(xaxis, yaxis, zaxis);
         }
 
         /// <summary>
@@ -105,6 +105,7 @@ namespace ProximityMatch
             return proximity;
         }
 
+
     }
 
     public class Graph
@@ -127,7 +128,7 @@ namespace ProximityMatch
             {
                 dat.SetCoordinate(); // set the coordinate vector.
                 Console.WriteLine("refno = {0} , odometer = {1}K km , year = {2} , price = ${3}K , coordinate = ({1}, {2}, {3})",
-                                    dat.refno, dat.odometer, dat.year, dat.price);
+                                    dat.refno, dat.xaxis, dat.yaxis, dat.zaxis);
             }
             Console.WriteLine("***----------------------------------------END-----------------------------------------------***");
         }
@@ -163,7 +164,7 @@ namespace ProximityMatch
             {
                 int count = 0;   
                 Console.WriteLine("\nrefno = {0} , odometer = {1}K km , year = {2} , price = ${3}K , coordinate = ({1}, {2}, {3})",
-                                    car.refno, car.odometer, car.year, car.price);
+                                    car.refno, car.xaxis, car.yaxis, car.zaxis);
                 Console.WriteLine("------------------------------------------------------------------------------------------------");
                 foreach (var x in carList)
                 {
@@ -174,7 +175,7 @@ namespace ProximityMatch
                         {
                             count++;
                             Console.WriteLine("refno = {0} , odometer = {1}K km , year = {2} , price = ${3}K , coordinate = ({1}, {2}, {3}) \n",
-                                                x.refno, x.odometer, x.year, x.price);
+                                                x.refno, x.xaxis, x.yaxis, x.zaxis);
                         }
                     }
                 }

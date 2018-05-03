@@ -15,6 +15,4 @@ G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\obj\Debug\ProximityM
 G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\obj\Debug\ProximityMatch.pdb
 G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatch.exe
 G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatch.pdb
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatch.exe.CodeAnalysisLog.xml
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatch.exe.lastcodeanalysissucceeded
 G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\obj\Debug\ProximityMatch.csprojResolveAssemblyReference.cache
