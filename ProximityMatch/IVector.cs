@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace ProximityMatch
 {
-    public class Graph
+    public interface IVector
     {
+        double[] coordinate { get; set; }
     }
 }
