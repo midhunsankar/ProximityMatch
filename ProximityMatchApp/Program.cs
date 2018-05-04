@@ -44,6 +44,14 @@ namespace ProximityMatchApp
             carList.Plot(new Car() { refno = "car#19", xaxis = 0, yaxis = 2.017, zaxis = 45 });
             carList.Plot(new Car() { refno = "car#20", xaxis = 20, yaxis = 2.013, zaxis = 20 });
 
+            var nodes = carList.nearest(new Car() { refno = "car#14", xaxis = 8, yaxis = 2.016, zaxis = 25 });
+
+            foreach (Car dat in nodes)
+            {
+                Console.WriteLine("refno = {0} , odometer = {1}K km , year = {2} , price = ${3}K , coordinate = ({1}, {2}, {3})",
+                                   dat.refno, dat.xaxis, dat.yaxis, dat.zaxis);
+            }
+
             //Graph gp = new Graph(In: carList);
             
             //gp.DataList();

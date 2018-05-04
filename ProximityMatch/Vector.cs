@@ -9,7 +9,7 @@ namespace ProximityMatch
     public class Vector
     {
         private readonly int _dimension;
-        protected readonly IDictionary<double, LinkedList<VectorNode>> _index;
+        protected readonly SortedList<double, LinkedList<VectorNode>> _index;
 
 
         protected class VectorNode
@@ -21,7 +21,7 @@ namespace ProximityMatch
         public Vector(int dimension = 3)
         {
             _dimension = dimension;
-            _index = new SortedDictionary<double, LinkedList<VectorNode>>();
+            _index = new SortedList<double, LinkedList<VectorNode>>();
         }
 
         public void Plot(IVector vector)
@@ -77,115 +77,107 @@ namespace ProximityMatch
             return number;
         }
 
-        //public double[] coordinate { get; set; }
+        private double distance(double[] co1, double[] co2)
+        {
+            /*
+               Distance = sqrt( (x2−x1)^2 + (y2−y1)^2 + (z2-z1)^2 )
+             * For better explanation follow url : https://betterexplained.com/articles/measure-any-distance-with-the-pythagorean-theorem
+             */
+            double d = 0;
+            for (int i = 0; i < co1.Length; i++)
+            {
+                d += Math.Pow((co1[i] - co2[i]), 2);
+            }
+            return Math.Sqrt(d);
+        }
 
-        ///// <summary>
-        ///// set vector coordinates.
-        ///// </summary>
-        //public void SetCoordinate()
-        //{
-        //    coordinateT = new Tuple<double, double, double>(xaxis, yaxis, zaxis);
-        //}
+        public IList<IVector> nearest(IVector In)
+        {
+            var angle = generateAngles(In);
+            var lower = angle[0] - 3;
+            var upper = angle[0] + 3;
+            bool forward = true, backward = true;
+            List<VectorNode> candidates = new List<VectorNode>();            
+            var index = _index.IndexOfKey(angle[0]);
+            int i = index;
+            
+            foreach (var E in _index.ElementAt(i).Value.ToList())
+            {
+                if (InRange(angle, E._anglePlain, 3) && distance(angle, E._anglePlain) < 1)
+                {
+                    candidates.Add(E);
+                }
+            }
 
-        ///// <summary>
-        ///// return stored vector coordinate.
-        ///// </summary>
-        ///// <returns></returns>
-        //public Tuple<double, double, double> GetCoordinate()
-        //{
-        //    return coordinateT;
-        //}
+            while (forward)
+            {
+                i++;
+                if (i < _index.Count)
+                {
+                    var L = _index.ElementAt(i).Key;
+                    if (L <= upper)
+                    {
+                        foreach (var E in _index.ElementAt(i).Value.ToList())
+                        {
+                            if (InRange(angle, E._anglePlain, 3) && distance(angle, E._anglePlain) < 1)
+                            {
+                                candidates.Add(E);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        forward = false;
+                    }
+                }
+                else
+                {
+                    forward = false;
+                }
+            }
+            i = index;
+            while (backward)
+            {
+                i--;
+                if (i >= 0)
+                {
+                    var L = _index.ElementAt(i).Key;
+                    if (L >= lower)
+                    {
+                        foreach (var E in _index.ElementAt(i).Value.ToList())
+                        {
+                            if (InRange(angle, E._anglePlain, 3) && distance(angle, E._anglePlain) < 1)
+                            {
+                                candidates.Add(E);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        backward = false;
+                    }
+                }
+                else
+                {
+                    backward = false;
+                }
+            }
+            return candidates.Select<VectorNode, IVector>(x => x._vector).ToList();
+        }
 
-        ///// <summary>
-        ///// Function to compute the distance between two vector coordinates in three dimention.
-        ///// </summary>
-        ///// <param name="Incoordinate">The coordinate that to be checked against.</param>
-        ///// <returns></returns>
-        //public double CheckProximity(Tuple<double, double, double> Incoordinate)
-        //{
-        //    /*
-        //       Distance = sqrt( (x2−x1)^2 + (y2−y1)^2 + (z2-z1)^2 )
-        //     * For better explanation follow url : https://betterexplained.com/articles/measure-any-distance-with-the-pythagorean-theorem
-        //     */
-        //    double proximity = Math.Sqrt(
-        //        Math.Pow((Incoordinate.Item1 - coordinateT.Item1), 2)
-        //        +
-        //        Math.Pow((Incoordinate.Item2 - coordinateT.Item2), 2)
-        //        +
-        //        Math.Pow((Incoordinate.Item3 - coordinateT.Item3), 2)
-        //        );
+        private bool InRange(double[] co1, double[] co2, double deviation)
+        {
 
-        //    return proximity;
-        //}
-
-
-
-        ///// <summary>
-        ///// Just show all car data.
-        ///// </summary>
-        //public void DataList()
-        //{
-        //    Console.WriteLine("Data List :");
-        //    Console.WriteLine("-----------------------------------------------------------------------------------");
-        //    foreach (var dat in carList)
-        //    {
-        //        dat.SetCoordinate(); // set the coordinate vector.
-        //        Console.WriteLine("refno = {0} , odometer = {1}K km , year = {2} , price = ${3}K , coordinate = ({1}, {2}, {3})",
-        //                            dat.refno, dat.xaxis, dat.yaxis, dat.zaxis);
-        //    }
-        //    Console.WriteLine("***----------------------------------------END-----------------------------------------------***");
-        //}
-
-        ///// <summary>
-        ///// Calculate the distance from a single coordinate to every other coordinates.
-        ///// </summary>
-        ///// <param name="refno">Point of reference, The cordinate that need to checked against.</param>
-        //public void ListAllProximities(string refno)
-        //{
-        //    var car = carList.Where(x => x.refno.Equals(refno)).FirstOrDefault();
-        //    if (car != null)
-        //    {
-        //        foreach (var x in carList)
-        //        {
-        //            if (!x.refno.Equals(refno))
-        //            {
-        //                Console.WriteLine("\n {0} => {1} , proximity = {2} ", car.refno, x.refno, x.CheckProximity(car.GetCoordinate()));
-        //            }
-        //        }
-        //    }
-        //}
-
-        ///// <summary>
-        ///// Find the nearest coordinates to the point of reference.
-        ///// </summary>
-        ///// <param name="refno">Point of reference, The cordinate that need to checked against.</param>
-        ///// <param name="distance">The maximum threshold that to considered.</param>
-        //public void ListProximities(string refno, double distance)
-        //{
-        //    var car = carList.Where(x => x.refno.Equals(refno)).FirstOrDefault();
-        //    if (car != null)
-        //    {
-        //        int count = 0;   
-        //        Console.WriteLine("\nrefno = {0} , odometer = {1}K km , year = {2} , price = ${3}K , coordinate = ({1}, {2}, {3})",
-        //                            car.refno, car.xaxis, car.yaxis, car.zaxis);
-        //        Console.WriteLine("------------------------------------------------------------------------------------------------");
-        //        foreach (var x in carList)
-        //        {
-        //            if (!x.refno.Equals(refno))
-        //            {
-        //                var Proximity = x.CheckProximity(car.GetCoordinate());
-        //                if (Proximity < distance)
-        //                {
-        //                    count++;
-        //                    Console.WriteLine("refno = {0} , odometer = {1}K km , year = {2} , price = ${3}K , coordinate = ({1}, {2}, {3}) \n",
-        //                                        x.refno, x.xaxis, x.yaxis, x.zaxis);
-        //                }
-        //            }
-        //        }
-        //        Console.WriteLine("{0} Matches found", count);
-        //        Console.WriteLine("***----------------------------------------END-----------------------------------------------***");
-        //    }
-        //}
+            for (int i = 0; i < co1.Length; i++)
+            {
+                if (co2[i] < co1[i] - deviation || co2[i] > co1[i] + deviation)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
     }
 
 
