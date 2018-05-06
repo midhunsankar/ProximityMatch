@@ -1,17 +1,27 @@
-﻿using System;
+﻿/*
+ * Developer    : Midhun Sankar
+ * Date         : 02/05/2018
+ * Description  : This project is a demo to plot entities in a three dimentional vector space,
+ *                and find vector points laying nearest to a point of reference. 
+ * License      : GNU General Public License.
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ProximityMatch.Exceptions;
 
 namespace ProximityMatch
 {
     public class Vector
     {
+        public int? take { get; set; }
+
         protected readonly int _dimension;
         protected int _distance;
 
-        internal readonly Dictionary<double, List<VectorNode>> _hashedCollection;
+        internal readonly IDictionary<double, List<VectorNode>> _hashedCollection;
 
         private double Mu = 0, N = 0;
         private double _mean { get { return Mu / N; } }
@@ -27,8 +37,9 @@ namespace ProximityMatch
         {
             if (_dimension != vector.coordinate.Length)
             {
-                throw new Exception("dimension invalid!!");
+                throw new DimensionExceptions("dimension invalid!!");
             }
+
             var v = new VectorNode()
                 {
                     _vector = vector,
@@ -50,7 +61,7 @@ namespace ProximityMatch
             }
         }
 
-        public virtual IList<IVector> Nearest(IVector In, int take = 10)
+        public virtual IList<IVector> Nearest(IVector In)
         {
             var angle = GenerateAngles(In);
             List<IVector> candidates = new List<IVector>();
@@ -67,10 +78,13 @@ namespace ProximityMatch
                     }
                 }
             }
-            return candidates.OrderBy(x => x._distance).Take(take).ToList();
+            if(take.HasValue)
+                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+            else
+                return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public virtual IList<IVector> NearestFullScan(IVector In, int take = 10)
+        public virtual IList<IVector> NearestFullScan(IVector In)
         {
             List<IVector> candidates = new List<IVector>();
             foreach (var vector in GetAll())
@@ -81,7 +95,30 @@ namespace ProximityMatch
                         candidates.Add(vector);
                     }
                 }            
-            return candidates.OrderBy(x => x._distance).Take(take).ToList();
+            if(take.HasValue)
+                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+            else
+                return candidates.OrderBy(x => x._distance).ToList();
+        }
+
+        public virtual IList<IVector> Exact(IVector In)
+        {
+            List<IVector> candidates = new List<IVector>();
+            var angle = GenerateAngles(In);
+            if (_hashedCollection.ContainsKey(angle[0]))
+            {
+                var hashed = _hashedCollection[angle[0]];
+                foreach (var element in hashed)
+                {
+                    element._vector._distance = Distance(In.coordinate, element._vector.coordinate);
+                    if (element._vector._distance == 0)
+                        candidates.Add(element._vector);
+                }
+            }
+            if (take.HasValue)
+                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+            else
+                return candidates.OrderBy(x => x._distance).ToList();
         }
 
         public virtual IList<IVector> GetAll()

@@ -20,9 +20,7 @@ namespace ProximityMatchApp
         {
             Vector carList = new Vector(dimension: 5);
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-            //IList<Car> carList = new List<Car>();
-            /* Adding some data to the list. */
-        
+         
             Random rnd = new Random();
             double x, y, z, p = 0, q = 0;
             int maxlimit = 1000000;
@@ -33,13 +31,15 @@ namespace ProximityMatchApp
                 x = rnd.Next(0, 100000); // odometer
                 y = rnd.Next(1965, 2018); // year
                 z = rnd.Next(1000, 100000);// price
-             //   p = rnd.Next(800, 6000);// engine cc
-            //    q = rnd.Next(0, 5); // safety rating 
+             
+                //  p = rnd.Next(800, 6000);// engine cc
+                //  q = rnd.Next(0, 5); // safety rating 
 
                 x = x - x % 1000;
                 z = z - z % 500;
-             //   p = p - p % 1000;
+                //  p = p - p % 1000;
 
+                /* Adding some data to the list. */
                 carList.Plot(new Car() { refno = "car#" + i, xaxis = x, yaxis = y, zaxis = z });
             }
             sw.Stop();
@@ -49,6 +49,7 @@ namespace ProximityMatchApp
             //    Console.WriteLine("refno = {0} , odometer = {1}K km , year = {2} , price = ${3}K , coordinate = ({1}, {2}, {3})",
             //                       dat.refno, dat.xaxis, dat.yaxis, dat.zaxis);
             //}
+
             do
             {
                 x = rnd.Next(0, 100000); // odometer
@@ -76,6 +77,7 @@ namespace ProximityMatchApp
                                            dat.refno, dat.xaxis, dat.yaxis, dat.zaxis, dat.paxis, dat.qaxis);
                 }
                 sw.Stop();
+                
                 Console.WriteLine("\nSearching finished!! Time: {0} ms Cycles: {1} ticks\n", sw.Elapsed.Milliseconds, sw.Elapsed.Ticks);
 
                 sw = new System.Diagnostics.Stopwatch();
@@ -87,13 +89,13 @@ namespace ProximityMatchApp
                            dat.refno, dat.xaxis, dat.yaxis, dat.zaxis, dat.paxis, dat.qaxis);
                 }
                 sw.Stop();
+                
                 Console.WriteLine("\nSearching finished (Full)!! Time: {0} ms Cycles: {1} ticks", sw.Elapsed.Milliseconds, sw.Elapsed.Ticks);
-
                 Console.WriteLine("\nDo you want to continue (y/n)?");
+
             } while (Console.ReadKey(true).Key == ConsoleKey.Y);
             
-        }
-        
+        }        
     }
 
     /// <summary>
@@ -154,8 +156,8 @@ namespace ProximityMatchApp
             }
         }
 
+        /* IVector implimentation. */
         public double _distance { get; set; }
-
         private double[] coordinateP = new double[5];
         public double[] coordinate { get { return coordinateP; } set { coordinateP = value; } }
     }
