@@ -9,5 +9,6 @@ namespace ProximityMatch
     public interface IVector
     {
         double[] coordinate { get; set; }
+        double _distance { get; set; }
     }
 }

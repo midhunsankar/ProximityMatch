@@ -18,43 +18,28 @@ namespace ProximityMatchApp
     {
         static void Main(string[] args)
         {
-            Vector carList = new Vector();
+            Vector carList = new Vector(dimension: 5);
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             //IList<Car> carList = new List<Car>();
             /* Adding some data to the list. */
-            //carList.Plot(new Car() { refno = "car#1", xaxis = 0, yaxis = 2018, zaxis = 30 });
-
-            //carList.Plot(new Car() { refno = "car#2", xaxis = 0, yaxis = 2018, zaxis = 25 });
-            //carList.Plot(new Car() { refno = "car#3", xaxis = 0, yaxis = 2018, zaxis = 50 });
-            //carList.Plot(new Car() { refno = "car#4", xaxis = 1, yaxis = 2018, zaxis = 40 });
-            //carList.Plot(new Car() { refno = "car#5", xaxis = 10, yaxis = 2015, zaxis = 30 });
-            //carList.Plot(new Car() { refno = "car#6", xaxis = 30, yaxis = 2016, zaxis = 25 });
-            //carList.Plot(new Car() { refno = "car#7", xaxis = 0, yaxis = 2017, zaxis = 50 });
-            //carList.Plot(new Car() { refno = "car#8", xaxis = 70, yaxis = 2010, zaxis = 10 });
-            //carList.Plot(new Car() { refno = "car#9", xaxis = 0, yaxis = 2018, zaxis = 22 });
-            //carList.Plot(new Car() { refno = "car#10", xaxis = 5, yaxis = 2017, zaxis = 45 });
-            //carList.Plot(new Car() { refno = "car#11", xaxis = 0, yaxis = 2018, zaxis = 35 });
-            //carList.Plot(new Car() { refno = "car#12", xaxis = 2, yaxis = 2017, zaxis = 40 });
-            //carList.Plot(new Car() { refno = "car#13", xaxis = 10, yaxis = 2015, zaxis = 21 });
-            //carList.Plot(new Car() { refno = "car#14", xaxis = 8, yaxis = 2016, zaxis = 25 });
-            //carList.Plot(new Car() { refno = "car#15", xaxis = 3, yaxis = 2017, zaxis = 35 });
-            //carList.Plot(new Car() { refno = "car#16", xaxis = 60, yaxis = 2011, zaxis = 11 });
-            //carList.Plot(new Car() { refno = "car#17", xaxis = 60, yaxis = 2014, zaxis = 11 });
-            //carList.Plot(new Car() { refno = "car#18", xaxis = 35, yaxis = 2016, zaxis = 22 });
-            //carList.Plot(new Car() { refno = "car#19", xaxis = 0, yaxis = 2017, zaxis = 45 });
-            //carList.Plot(new Car() { refno = "car#20", xaxis = 20, yaxis = 2013, zaxis = 20 });
-
+        
             Random rnd = new Random();
-            double x, y, z;
+            double x, y, z, p = 0, q = 0;
             int maxlimit = 1000000;
             sw.Start();
 
             for (int i = 0; i < maxlimit; i++)
             {
-                x = rnd.Next(0, 200);
-                y = rnd.Next(1965, 2018);
-                z = rnd.Next(1000, 100000);
+                x = rnd.Next(0, 100000); // odometer
+                y = rnd.Next(1965, 2018); // year
+                z = rnd.Next(1000, 100000);// price
+             //   p = rnd.Next(800, 6000);// engine cc
+            //    q = rnd.Next(0, 5); // safety rating 
+
+                x = x - x % 1000;
                 z = z - z % 500;
+             //   p = p - p % 1000;
+
                 carList.Plot(new Car() { refno = "car#" + i, xaxis = x, yaxis = y, zaxis = z });
             }
             sw.Stop();
@@ -66,37 +51,43 @@ namespace ProximityMatchApp
             //}
             do
             {
-                x = rnd.Next(0, 200);
-                y = rnd.Next(1965, 2018);
-                z = rnd.Next(1000, 100000);
-                z = z - z % 500;
-                var car = new Car() { refno = "car#" + rnd.Next(0, 100000), xaxis = x, yaxis = y, zaxis = z };
+                x = rnd.Next(0, 100000); // odometer
+                y = rnd.Next(1965, 2018); // year
+                z = rnd.Next(1000, 100000);// price
+              
+             //   p = rnd.Next(800, 6000);// engine cc
+             //   q = rnd.Next(0, 5); // safety rating 
 
-                Console.WriteLine("\nrefno = {0} , odometer = {1}K km , year = {2} , price = ${3} , coordinate = ({1}, {2}, {3})",
-                                       car.refno, car.xaxis, car.yaxis, car.zaxis);
+                x = x - x % 1000;
+                z = z - z % 500;
+            //    p = p - p % 500; 
+                
+                var car = new Car() { refno = "car#" + rnd.Next(0, 100000), xaxis = x, yaxis = y, zaxis = z, paxis= p, qaxis= q };
+                Console.WriteLine("\nrefno = {0} , odometer = {1} km , year = {2} , price = ${3} , engine = {4} cc, rating = {5} coordinate = ({1}, {2}, {3}, {4}, {5})",
+                                       car.refno, car.xaxis, car.yaxis, car.zaxis, car.paxis, car.qaxis);
                 Console.WriteLine("\n*******************************************************************************************\n");                
                 
                 sw = new System.Diagnostics.Stopwatch();
                 sw.Start();
-                var nodes = carList.nearest(car);
+                var nodes = carList.Nearest(car, 5);
                 foreach (Car dat in nodes)
                 {
-                    Console.WriteLine("refno = {0} , odometer = {1}K km , year = {2} , price = ${3} , coordinate = ({1}, {2}, {3})",
-                                       dat.refno, dat.xaxis, dat.yaxis, dat.zaxis);
+                    Console.WriteLine("\nrefno = {0} , odometer = {1} km , year = {2} , price = ${3} , engine = {4} cc, rating = {5} coordinate = ({1}, {2}, {3}, {4}, {5})",
+                                           dat.refno, dat.xaxis, dat.yaxis, dat.zaxis, dat.paxis, dat.qaxis);
                 }
                 sw.Stop();
-                Console.WriteLine("\nSearching finished!! Time: {0} ms Cycles: {1} ticks", sw.Elapsed.TotalSeconds, sw.Elapsed.Ticks);
+                Console.WriteLine("\nSearching finished!! Time: {0} ms Cycles: {1} ticks\n", sw.Elapsed.Milliseconds, sw.Elapsed.Ticks);
 
                 sw = new System.Diagnostics.Stopwatch();
                 sw.Start();
-                nodes = carList.nearestFull(car);
+                nodes = carList.NearestFullScan(car, 5);
                 foreach (Car dat in nodes)
                 {
-                    Console.WriteLine("refno = {0} , odometer = {1}K km , year = {2} , price = ${3} , coordinate = ({1}, {2}, {3})",
-                                       dat.refno, dat.xaxis, dat.yaxis, dat.zaxis);
+                    Console.WriteLine("\nrefno = {0} , odometer = {1} km , year = {2} , price = ${3} , engine = {4} cc, rating = {5} coordinate = ({1}, {2}, {3}, {4}, {5})",
+                           dat.refno, dat.xaxis, dat.yaxis, dat.zaxis, dat.paxis, dat.qaxis);
                 }
                 sw.Stop();
-                Console.WriteLine("\nSearching finished (Full)!! Time: {0} ms Cycles: {1} ticks", sw.Elapsed.TotalSeconds, sw.Elapsed.Ticks);
+                Console.WriteLine("\nSearching finished (Full)!! Time: {0} ms Cycles: {1} ticks", sw.Elapsed.Milliseconds, sw.Elapsed.Ticks);
 
                 Console.WriteLine("\nDo you want to continue (y/n)?");
             } while (Console.ReadKey(true).Key == ConsoleKey.Y);
@@ -115,6 +106,8 @@ namespace ProximityMatchApp
         private double xaxisP;
         private double yaxisP;
         private double zaxisP;
+        private double paxisP;
+        private double qaxisP;
 
         public double xaxis
         {
@@ -142,8 +135,28 @@ namespace ProximityMatchApp
                 coordinateP[2] = value;
             }
         }
-        
-        private double[] coordinateP = new double[3];
+        public double paxis
+        {
+            get { return paxisP; }
+            set
+            {
+                paxisP = value;
+                coordinateP[3] = value;
+            }
+        }
+        public double qaxis
+        {
+            get { return qaxisP; }
+            set
+            {
+                qaxisP = value;
+                coordinateP[4] = value;
+            }
+        }
+
+        public double _distance { get; set; }
+
+        private double[] coordinateP = new double[5];
         public double[] coordinate { get { return coordinateP; } set { coordinateP = value; } }
     }
 
