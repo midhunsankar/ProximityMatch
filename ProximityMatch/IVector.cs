@@ -15,6 +15,7 @@ namespace ProximityMatch
 {
     public interface IVector
     {
+        long uniqueId { get; set; }
         double[] coordinate { get; set; }
         double _distance { get; set; }
     }

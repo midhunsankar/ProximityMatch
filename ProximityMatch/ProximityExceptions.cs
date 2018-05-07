@@ -12,4 +12,13 @@ namespace ProximityMatch.Exceptions
         {
         }
     }
+    public class UniqueIdExceptions : System.Exception
+    {
+        public UniqueIdExceptions(string message)
+            : base(message: message)
+        {
+        }
+    }
+
+
 }

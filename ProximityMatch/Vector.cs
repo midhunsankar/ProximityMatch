@@ -39,6 +39,15 @@ namespace ProximityMatch
             {
                 throw new DimensionExceptions("dimension invalid!!");
             }
+            if (_dimension < 2)
+            {
+                throw new DimensionExceptions("Atleast two dimensions are required!!");
+            }
+
+            if (vector.uniqueId == 0)
+            {
+                vector.uniqueId = Unique();
+            }
 
             var v = new VectorNode()
                 {
@@ -131,6 +140,26 @@ namespace ProximityMatch
             return all;
         }
 
+        public virtual bool Remove(IVector In)
+        {
+            if (In.uniqueId == 0)
+            {
+                throw new UniqueIdExceptions("UniqueId not set!!");
+            }
+
+            foreach(var hashed in _hashedCollection.Values){
+                foreach(var vector in hashed)
+                {
+                if (In.uniqueId.Equals(vector._vector.uniqueId))
+                {
+                    hashed.Remove(vector);
+                    return true;
+                }
+                }
+            }
+            return false;
+        }
+
     #region private_functions
 
             private double[] GenerateAngles(IVector vector)
@@ -149,7 +178,7 @@ namespace ProximityMatch
                         var slope = Math.Sqrt( Math.Pow(vector.coordinate[i], 2) + Math.Pow(vector.coordinate[j], 2) );
                         var costheta = vector.coordinate[i] / slope;
                         var angle = Math.Acos(costheta) * (180 / Math.PI);
-                        angleList[z] = angle;
+                        angleList[z] = Math.Round(angle, 4);
                         z++;
                     }
                 return angleList;
@@ -176,12 +205,12 @@ namespace ProximityMatch
                 return Math.Sqrt(d);
             }
 
-            private bool InRange(double[] co1, double[] co2, double deviation)
+            private bool InRange(double[] angle1, double[] angle2, double deviation)
             {
 
-                for (int i = 0; i < co1.Length; i++)
+                for (int i = 0; i < angle1.Length; i++)
                 {
-                    if (co2[i] < co1[i] - deviation || co2[i] > co1[i] + deviation)
+                    if (!(angle2[i] >= (angle1[i] - deviation) && angle2[i] <= (angle1[i] + deviation)))
                     {
                         return false;
                     }
@@ -189,9 +218,9 @@ namespace ProximityMatch
                 return true;
             }
  
-            private bool InRange(double co1, double co2, double deviation)
+            private bool InRange(double angle1, double angle2, double deviation)
             {
-                    if (co2 < co1 - deviation || co2 > co1 + deviation)
+                    if (!(angle2 >= (angle1 - deviation) && angle2 <= (angle1 + deviation)))
                     {
                         return false;
                     }           
@@ -201,8 +230,19 @@ namespace ProximityMatch
             private double StandardDeviation()
             {
                var mean = _mean;
-               var sum = _hashedCollection.Sum(x => Math.Pow(x.Key - mean,2));
-               return Math.Sqrt(sum / (_hashedCollection.Count > 10 ? N : N-1));
+               double sum = 0;
+                sum = _hashedCollection.Sum(x => Math.Pow(x.Key - mean,2));
+
+                if (sum == 0) /* standard deviation = 0 is not ideal so atleast 1 degree of check is required. */
+                {
+                    return 1;
+                }
+                return Math.Sqrt(sum / (_hashedCollection.Count > 10 ? N : N-1));
+            }
+
+            private long Unique()
+            {
+                return DateTime.Now.Ticks;
             }
 
     #endregion

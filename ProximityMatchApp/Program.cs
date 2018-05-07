@@ -70,7 +70,7 @@ namespace ProximityMatchApp
                 
                 sw = new System.Diagnostics.Stopwatch();
                 sw.Start();
-                var nodes = carList.Nearest(car, 5);
+                var nodes = carList.Nearest(car);
                 foreach (Car dat in nodes)
                 {
                     Console.WriteLine("\nrefno = {0} , odometer = {1} km , year = {2} , price = ${3} , engine = {4} cc, rating = {5} coordinate = ({1}, {2}, {3}, {4}, {5})",
@@ -82,7 +82,7 @@ namespace ProximityMatchApp
 
                 sw = new System.Diagnostics.Stopwatch();
                 sw.Start();
-                nodes = carList.NearestFullScan(car, 5);
+                nodes = carList.NearestFullScan(car);
                 foreach (Car dat in nodes)
                 {
                     Console.WriteLine("\nrefno = {0} , odometer = {1} km , year = {2} , price = ${3} , engine = {4} cc, rating = {5} coordinate = ({1}, {2}, {3}, {4}, {5})",
@@ -104,7 +104,7 @@ namespace ProximityMatchApp
     public class Car : IVector 
     {
         public string refno { get; set; }
-
+        public long uniqueId { get; set; }
         private double xaxisP;
         private double yaxisP;
         private double zaxisP;
