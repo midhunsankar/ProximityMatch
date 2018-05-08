@@ -184,6 +184,14 @@ namespace ProximityMatch
                 return angleList;
             }
 
+            private double GenerateAngles(double xPlain, double yPlain)
+            {
+                var slope = Math.Sqrt(Math.Pow(xPlain, 2) + Math.Pow(yPlain, 2));
+                var costheta = xPlain / slope;
+                var angle = Math.Acos(costheta) * (180 / Math.PI);
+                return Math.Round(angle, 4);
+            }
+
             private int Factorial(int number)
             {
                 if (number > 1)                
