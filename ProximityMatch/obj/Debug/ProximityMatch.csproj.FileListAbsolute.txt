@@ -1,4 +1,0 @@
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatch.dll
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatch.pdb
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\obj\Debug\ProximityMatch.dll
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\obj\Debug\ProximityMatch.pdb

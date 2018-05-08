@@ -17,5 +17,6 @@ namespace ProximityMatch
     {
         public IVector _vector;
         public double[] _anglePlain;
+        public double _distanceOrgin;
     }
 }
