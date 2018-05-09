@@ -110,13 +110,46 @@ namespace ProximityMatch
                             {
                                 vnode._vector._distance = Distance(In.coordinate, vnode._vector.coordinate);
                                 if (vnode._vector._distance < _distance)
-                                    candidates.Add(vnode._vector);
+                                    if(vnode._vector.uniqueId != In.uniqueId)
+                                        candidates.Add(vnode._vector);
                             }
                         }
                     }
                 }
             }
             if(take.HasValue)
+                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+            else
+                return candidates.OrderBy(x => x._distance).ToList();
+        }
+
+        public virtual IList<IVector> Nearest(IVector In, Func<bool> condition)
+        {
+            var angle = GenerateAngles(In);
+            var distanceOrgin = Distance(new double[2] { 0, 0 }, new double[2] { In.coordinate[0], In.coordinate[1] });
+            List<IVector> candidates = new List<IVector>();
+            var sdAngle = StdDev_Angle();
+            foreach (var hashedAngles in _hashedCollection)
+            {
+                if (InRange(angle[0], hashedAngles.Key, sdAngle))
+                {
+                    foreach (var hashedDistance in hashedAngles.Value)
+                    {
+                        if (InRange(distanceOrgin, hashedDistance.Key, _distance))
+                        {
+                            foreach (var vnode in hashedDistance.Value)
+                            {
+                                vnode._vector._distance = Distance(In.coordinate, vnode._vector.coordinate);
+                                if (vnode._vector._distance < _distance)
+                                    if (vnode._vector.uniqueId != In.uniqueId)
+                                        if(condition())
+                                            candidates.Add(vnode._vector);
+                            }
+                        }
+                    }
+                }
+            }
+            if (take.HasValue)
                 return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
             else
                 return candidates.OrderBy(x => x._distance).ToList();
@@ -130,7 +163,8 @@ namespace ProximityMatch
                     vector._distance = Distance(In.coordinate, vector.coordinate);
                     if (vector._distance < _distance)
                     {
-                        candidates.Add(vector);
+                        if (vector.uniqueId != In.uniqueId)
+                            candidates.Add(vector);
                     }
                 }            
             if(take.HasValue)
@@ -156,7 +190,8 @@ namespace ProximityMatch
                 }
                 if (add)
                 {
-                    candidates.Add(vector);
+                    if (vector.uniqueId != In.uniqueId)
+                        candidates.Add(vector);
                 }
             }
             if (take.HasValue)
