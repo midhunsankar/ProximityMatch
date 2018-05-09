@@ -359,7 +359,13 @@ namespace ProximityMatch
 
                 var n = vector.coordinate.Length;
                 var r = 2;
-                var len = Factorial(n) / (Factorial(n - r) * Factorial(r));
+                var len = 2;
+                
+                if (n > 2)
+                {
+                   len = Factorial(n) / (Factorial(n - r) * Factorial(r));
+                }
+
                 var angleList = new double[len];
                 var z = 0;
             
