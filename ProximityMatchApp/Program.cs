@@ -19,8 +19,11 @@ namespace ProximityMatchApp
         static void Main(string[] args)
         {
 
-            SampleCars _carsObj = new SampleCars();
-            _carsObj.Run();
+            //SampleCars _carsObj = new SampleCars();
+            //_carsObj.Run();
+
+            SamplePatient _patientObj = new SamplePatient();
+            _patientObj.Run();
             
         }        
     }
