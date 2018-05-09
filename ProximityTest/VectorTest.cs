@@ -140,48 +140,105 @@ namespace ProximityTest
         }
 
         [TestMethod]
-        public void RemoveWithOutId()
+        public void RemoveNotFound()
         {
             _cars.Plot(new car() { odometer = 1000, year = 2000, price = 5000 });
-            _cars.Plot(new car() { odometer = 1000, year = 2000, price = 5000 });
-            _cars.Plot(new car() { odometer = 1000, year = 2000, price = 5000 });
+            _cars.Plot(new car() { odometer = 2000, year = 2000, price = 4000 });
+            _cars.Plot(new car() { odometer = 3000, year = 2000, price = 3000 });
 
-            var _car = new car() { odometer = 1000, year = 2000, price = 5000 };
-            try
-            {
-                _cars.Remove(_car);
-                Assert.Fail();
-            }
-            catch (ProximityMatch.Exceptions.UniqueIdExceptions ex)
-            {
-                //Expected result.
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail();
-            }
+            var _car = new car() { odometer = 1000, year = 2000, price = 6000 };
+            Assert.IsFalse(_cars.Remove(_car));
+        }
+
+        [TestMethod]
+        public void RemoveFound()
+        {
+            _cars.Plot(new car() { odometer = 1000, year = 2000, price = 5000 });
+            _cars.Plot(new car() { odometer = 2000, year = 2000, price = 4000 });
+            _cars.Plot(new car() { odometer = 3000, year = 2000, price = 3000 });
+            _cars.Plot(new car() { odometer = 2000, year = 2000, price = -4000 });
+
+            var _car = new car() { odometer = 2000, year = 2000, price = 4000 };
+            Assert.IsTrue(_cars.Remove(_car));
+        }
+
+         [TestMethod]
+        public void RemoveWithId()
+        {
+            _cars.Plot(new car() { uniqueId = 10, odometer = 1000, year = 2000, price = 5000 });
+            _cars.Plot(new car() { uniqueId = 11, odometer = 2000, year = 2000, price = 4000 });
+            _cars.Plot(new car() { uniqueId = 12, odometer = 3000, year = 2000, price = 3000 });
+            _cars.Plot(new car() { uniqueId = 13, odometer = 2000, year = 2000, price = -4000 });
+            
+             Assert.IsTrue(_cars.Remove(13));
         }
 
         [TestMethod]
         public void RemoveWithWrongId()
         {
             _cars.Plot(new car() { uniqueId = 10, odometer = 1000, year = 2000, price = 5000 });
-            _cars.Plot(new car() { uniqueId = 11, odometer = 1000, year = 2000, price = 5000 });
-            _cars.Plot(new car() { uniqueId = 12, odometer = 1000, year = 2000, price = 5000 });
-
-            var _car = new car() { uniqueId = 15, odometer = 1000, year = 2000, price = 5000 };
-            Assert.IsFalse(_cars.Remove(_car));
+            _cars.Plot(new car() { uniqueId = 11, odometer = 2000, year = 2000, price = 4000 });
+            _cars.Plot(new car() { uniqueId = 12, odometer = 3000, year = 2000, price = 3000 });
+         
+            Assert.IsFalse(_cars.Remove(15));
         }
 
         [TestMethod]
-        public void RemoveWithCorrectId()
+        public void UpdateSuccess()
         {
-            _cars.Plot(new car() { uniqueId = 10, odometer = 1000, year = 2000, price = 5000 });
-            _cars.Plot(new car() { uniqueId = 11, odometer = 1000, year = 2000, price = 5000 });
-            _cars.Plot(new car() { uniqueId = 12, odometer = 1000, year = 2000, price = 5000 });
+            var Old = new car() { uniqueId = 10, odometer = 1000, year = 2000, price = 5000 };
+            var New = new car() { uniqueId = 10, odometer = 2000, year = 2000, price = 4500 };
+            
+            _cars.Plot(Old);
+            Assert.IsTrue(_cars.Update(Old: Old, New: New));
 
-            var _car = new car() { uniqueId = 11, odometer = 1000, year = 2000, price = 5000 };
-            Assert.IsTrue(_cars.Remove(_car));
+            Assert.IsTrue(_cars.Exact(New).Count > 0);
+            Assert.IsTrue(_cars.Exact(Old).Count == 0);
+        }
+
+        [TestMethod]
+        public void UpdateFailInvalidId()
+        {
+            var Old = new car() { uniqueId = 10, odometer = 1000, year = 2000, price = 5000 };
+            var New = new car() { uniqueId = 11, odometer = 2000, year = 2000, price = 4500 };
+
+            _cars.Plot(Old);
+            try
+            {
+                _cars.Update(Old: Old, New: New);
+                Assert.Fail();
+            }
+            catch(ProximityMatch.Exceptions.UniqueIdExceptions ex)
+            {
+                // Expected.
+            }
+            catch(Exception ex)
+            {
+                Assert.Fail();
+            }
+        }
+
+        [TestMethod]
+        public void UpdateFailNoId()
+        {
+            var Old = new car() { uniqueId = 10, odometer = 1000, year = 2000, price = 5000 };
+            var New = new car() { odometer = 2000, year = 2000, price = 4500 };
+
+            _cars.Plot(Old);
+            try
+            {
+                _cars.Update(Old.uniqueId, New);
+                Assert.Fail();
+            }
+            catch (ProximityMatch.Exceptions.UniqueIdExceptions ex)
+            {
+                // Expected.
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail();
+            }
+            
         }
 
     }
