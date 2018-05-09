@@ -79,6 +79,19 @@ namespace ProximityMatch
 
         }
 
+        public virtual void Plot(IList<IVector> vectorList)
+        {
+            if (vectorList == null)
+            {
+                throw new ArgumentNullException();
+            }
+
+            foreach (var vector in vectorList)
+            {
+                Plot(vector: vector);
+            }
+        }
+
         public virtual IList<IVector> Nearest(IVector In)
         {
             var angle = GenerateAngles(In);
@@ -159,16 +172,16 @@ namespace ProximityMatch
             var distanceOrgin = Distance(new double[2]{ 0, 0 }, new double[2]{ In.coordinate[0], In.coordinate[1] });
             if (_hashedCollection.ContainsKey(angle[0]))
             {
-                var hashed = _hashedCollection[angle[0]];
-                foreach (var key in hashed.Keys)
+                var hashedAngles = _hashedCollection[angle[0]];
+                foreach (var hashedDistance in hashedAngles.Keys)
                 {
-                    if(key == distanceOrgin)
+                    if(hashedDistance == distanceOrgin)
                     {
-                        foreach(var element in hashed[key])
+                        foreach(var vnode in hashedAngles[hashedDistance])
                         {
-                            element._vector._distance = Distance(In.coordinate, element._vector.coordinate);
-                            if (element._vector._distance == 0)
-                                candidates.Add(element._vector);
+                            vnode._vector._distance = Distance(In.coordinate, vnode._vector.coordinate);
+                            if (vnode._vector._distance == 0)
+                                candidates.Add(vnode._vector);
                         }
                     }
                 }
@@ -182,11 +195,11 @@ namespace ProximityMatch
         public virtual IList<IVector> GetAll()
         {
             List<IVector> all = new List<IVector>();
-            foreach (var hashkey in _hashedCollection.Values)
+            foreach (var hashedAngles in _hashedCollection.Values)
             {
-                foreach (var hashKey2 in hashkey)
+                foreach (var hashedDistance in hashedAngles)
                 {
-                    all.AddRange(hashKey2.Value.Select<VectorNode, IVector>(x => x._vector).ToList());
+                    all.AddRange(hashedDistance.Value.Select<VectorNode, IVector>(x => x._vector).ToList());
                 }
             }
             return all;
@@ -194,19 +207,145 @@ namespace ProximityMatch
        
         public virtual bool Remove(IVector In)
         {
-            if (In.uniqueId == 0)
+            bool ret = false;
+            var angle = GenerateAngles(In);
+            var distanceOrgin = Distance(new double[2] { 0, 0 }, new double[2] { In.coordinate[0], In.coordinate[1] });
+            if (_hashedCollection.ContainsKey(angle[0]))
+            {
+                var hashedDistances = _hashedCollection[angle[0]];
+                int i = 0;
+               
+                while (i < hashedDistances.Count)
+                {
+                    var _hashedDistanceOrgin = hashedDistances.ElementAt(i).Key;
+                    if (_hashedDistanceOrgin == distanceOrgin)
+                    {
+                        int j = 0;
+                        var _vectorNodeList = hashedDistances.ElementAt(i).Value;
+                        while (j < _vectorNodeList.Count)
+                        {
+                            var vnode = _vectorNodeList[j];                            
+                            if (Distance(In.coordinate, vnode._vector.coordinate) == 0)
+                            {
+                                Mu -= vnode._anglePlain[0];
+                                N--;
+                                //remove node.
+                                _vectorNodeList.RemoveAt(j);
+                                ret = true;
+                                j--;
+                            }
+                            j++;
+                        }
+
+                        if(hashedDistances[_hashedDistanceOrgin] == null || hashedDistances[_hashedDistanceOrgin].Count == 0)
+                        {
+                            //No nodes empty dictionary so remove the key from parent.
+                            hashedDistances.Remove(_hashedDistanceOrgin);
+                            i--;
+                        }
+                    }
+                    i++;
+                 }
+                if (_hashedCollection[angle[0]] == null || _hashedCollection[angle[0]].Count == 0)
+                {
+                    //No nodes empty dictionary so remove the key from parent.
+                    _hashedCollection.Remove(angle[0]);
+                }
+            }
+            return ret;
+        }
+
+        public virtual bool Remove(long uniqueId)
+        {
+            var ret = false;
+            if (uniqueId == 0)
             {
                 throw new UniqueIdExceptions("UniqueId not set!!");
             }
 
-            foreach(var hashed in _hashedCollection.Values){
-                foreach(var vector in hashed)
+            int i = 0;
+            while(i < _hashedCollection.Count)
+            {
+                var angleKey = _hashedCollection.ElementAt(i).Key;
+                var hashedDistance = _hashedCollection[angleKey];
+                int j = 0;
+
+                while(j < hashedDistance.Count)
                 {
-                //if (In.uniqueId.Equals(vector._vector.uniqueId))
-                //{
-                //    hashed.Remove(vector);
-                //    return true;
-                //}
+                    var distanceKey = hashedDistance.ElementAt(j).Key;
+                    var _vectorNodeList = hashedDistance[distanceKey];
+                    int k = 0;
+
+                    while(k < _vectorNodeList.Count)
+                    {
+                        if(uniqueId == _vectorNodeList[k]._vector.uniqueId)
+                        {
+                            Mu -= _vectorNodeList[k]._anglePlain[0];
+                            N--;
+                            _vectorNodeList.RemoveAt(k);
+                            ret = true;
+                            break;
+                        }
+                        k++;
+                    }
+
+                    if (ret && (_vectorNodeList == null || _vectorNodeList.Count == 0))
+                    {
+                        hashedDistance.Remove(distanceKey);
+                        break;
+                    }
+
+                    j++;
+                }
+
+                if (ret && (hashedDistance == null || hashedDistance.Count == 0))
+                {
+                    _hashedCollection.Remove(angleKey);
+                    break;
+                }
+                i++;
+            }
+            return ret;
+        }
+
+        public virtual bool Update(IVector Old, IVector New)
+        {
+            if (New.uniqueId == 0)
+            {
+                throw new UniqueIdExceptions("UniqueId not set!!");
+            }
+            else if (Old.uniqueId != New.uniqueId)
+            {
+                throw new UniqueIdExceptions("UniqueId should be same!!");
+            }
+            else
+            {
+
+                if (Remove(Old))
+                {
+                    Plot(New);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public virtual bool Update(long uniqueId, IVector New)
+        {
+            if (New.uniqueId == 0)
+            {
+                throw new UniqueIdExceptions("UniqueId not set!!");
+            }
+            else if (uniqueId != New.uniqueId)
+            {
+                throw new UniqueIdExceptions("UniqueId should be same!!");
+            }
+            else
+            {
+                if (Remove(uniqueId))
+                {
+                    Plot(New);
+                    return true;
                 }
             }
             return false;
