@@ -14,6 +14,8 @@ using ProximityMatch.Exceptions;
 
 namespace ProximityMatch
 {
+    public delegate void FinishedEventHandler(object sender, ProximityMatchEventArgs e);
+
     public class Vector
     {       
         public int? take { get; set; }        
@@ -22,8 +24,8 @@ namespace ProximityMatch
         protected int _spread;
         protected readonly IDictionary<double, IDictionary<double, List<VectorNode>>> _hashedCollection;
 
-        protected delegate void plotCallback(VectorNode vnode);
-        protected plotCallback plotCallbackHandler;
+        public event FinishedEventHandler FinishedPloting;
+        public event FinishedEventHandler FinishedRemove;
 
         private double Mu = 0, N = 0;
         private double _mean { get { return Mu / N; } }
@@ -39,8 +41,6 @@ namespace ProximityMatch
 
             SetDistance(distance);
             SetSpread(spread);
-
-            plotCallbackHandler = new plotCallback(EventPlotCallback);
         }
 
         public void Plot(IVector vector)
@@ -59,34 +59,33 @@ namespace ProximityMatch
                 vector.uniqueId = Unique();
             }
 
-            var v = new VectorNode(                
+            var vnode = new VectorNode(                
                     vector : vector,
                     angle: GenerateAngles(vector),
                     distance : Distance(new double[2]{ 0, 0 }, new double[2]{ vector.coordinate[0], vector.coordinate[1] })  
                 );
 
-            Mu += v._anglePlain[0];
+            Mu += vnode._anglePlain[0];
             N++;
 
-            if(_hashedCollection.ContainsKey(v._anglePlain[0]))
+            if(_hashedCollection.ContainsKey(vnode._anglePlain[0]))
             {
-                if (_hashedCollection[v._anglePlain[0]].ContainsKey(v._distanceOrgin))
+                if (_hashedCollection[vnode._anglePlain[0]].ContainsKey(vnode._distanceOrgin))
                 {
-                    _hashedCollection[v._anglePlain[0]][v._distanceOrgin].Add(v);
+                    _hashedCollection[vnode._anglePlain[0]][vnode._distanceOrgin].Add(vnode);
                 }
                 else
                 {
-                    _hashedCollection[v._anglePlain[0]].Add(v._distanceOrgin, new List<VectorNode> { v });
+                    _hashedCollection[vnode._anglePlain[0]].Add(vnode._distanceOrgin, new List<VectorNode> { vnode });
                 }
             }
             else
             {
                 var LinkedL = new Dictionary<double, List<VectorNode>>();   
-                LinkedL.Add(v._distanceOrgin, new List<VectorNode>(){ v });
-                _hashedCollection.Add(v._anglePlain[0], LinkedL);
+                LinkedL.Add(vnode._distanceOrgin, new List<VectorNode>(){ vnode });
+                _hashedCollection.Add(vnode._anglePlain[0], LinkedL);
             }
-
-            plotCallbackHandler(v);
+            EventFinishedPloting(new PlotEventArgs(vnode));
         }
 
         public void Plot(IList<IVector> vectorList)
@@ -305,6 +304,7 @@ namespace ProximityMatch
                                 //remove node.
                                 _vectorNodeList.RemoveAt(j);
                                 ret = true;
+                                EventFinishedRemove(new RemoveEventArgs(vnode._vector.uniqueId, true));
                                 j--;
                             }
                             j++;
@@ -324,7 +324,7 @@ namespace ProximityMatch
                     //No nodes empty dictionary so remove the key from parent.
                     _hashedCollection.Remove(angle[0]);
                 }
-            }
+            }           
             return ret;
         }
 
@@ -357,6 +357,7 @@ namespace ProximityMatch
                             N--;
                             _vectorNodeList.RemoveAt(k);
                             ret = true;
+                            EventFinishedRemove(new RemoveEventArgs(uniqueId, true));
                             break;
                         }
                         k++;
@@ -569,9 +570,17 @@ namespace ProximityMatch
             {
                 return _spread;
             }
-        
-            protected virtual void EventPlotCallback(VectorNode vnode)
+
+            protected virtual void EventFinishedPloting(ProximityMatchEventArgs e)
             {
+                if (FinishedPloting != null)
+                    FinishedPloting(sender: this, e: e);
+            }
+
+            protected virtual void EventFinishedRemove(ProximityMatchEventArgs e)
+            {
+                if (FinishedRemove != null)
+                    FinishedRemove(sender: this, e: e);
             }
             
         #endregion

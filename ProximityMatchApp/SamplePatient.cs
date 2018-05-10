@@ -15,7 +15,7 @@ namespace ProximityMatchApp
         {           
            var Patients = LoadDataSet(2);
            Vector patientList = new Vector(dimension: 2);
-
+           patientList.FinishedPloting += FinishedPloting;
            patientList.Plot(vectorList: Patients);
 
            ConsoleKey Key;
@@ -56,6 +56,11 @@ namespace ProximityMatchApp
             } while (Key == ConsoleKey.Y);
 
 
+        }
+
+        protected void FinishedPloting(object sender, ProximityMatchEventArgs e)
+        {
+            var vnode= e as PlotEventArgs;
         }
 
         public IList<IVector> LoadDataSet(int dimention = 2)
@@ -131,7 +136,8 @@ namespace ProximityMatchApp
                 }
             }
             return dtCsv;
-        } 
+        }
+
     }
 
     public class Patient : IVector
