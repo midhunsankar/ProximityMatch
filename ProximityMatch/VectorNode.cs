@@ -13,10 +13,17 @@ using System.Text;
 
 namespace ProximityMatch
 {
-    internal class VectorNode
+    public sealed class VectorNode
     {
-        public IVector _vector;
-        public double[] _anglePlain;
-        public double _distanceOrgin;
+        public readonly IVector _vector;
+        public readonly double[] _anglePlain;
+        public readonly double _distanceOrgin;
+
+        public VectorNode(IVector vector, double[] angle, double distance)
+        {
+            _vector = vector;
+            _anglePlain = angle;
+            _distanceOrgin = distance;
+        }
     }
 }

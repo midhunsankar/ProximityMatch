@@ -15,25 +15,35 @@ using ProximityMatch.Exceptions;
 namespace ProximityMatch
 {
     public class Vector
-    {
-        public int? take { get; set; }
-
+    {       
+        public int? take { get; set; }        
         protected readonly int _dimension;
         protected int _distance;
+        protected int _spread;
+        protected readonly IDictionary<double, IDictionary<double, List<VectorNode>>> _hashedCollection;
 
-        internal readonly IDictionary<double, IDictionary<double, List<VectorNode>>> _hashedCollection;
+        protected delegate void plotCallback(VectorNode vnode);
+        protected plotCallback plotCallbackHandler;
 
         private double Mu = 0, N = 0;
         private double _mean { get { return Mu / N; } }
 
-        public Vector(int dimension = 3, int distance = 5)
+        public Vector(
+            int dimension = 3, 
+            int distance = 5,
+            int spread = 0
+            )
         {
             _dimension = dimension;
-            _distance = distance;
             _hashedCollection = new Dictionary<double, IDictionary<double, List<VectorNode>>>();
+
+            SetDistance(distance);
+            SetSpread(spread);
+
+            plotCallbackHandler = new plotCallback(EventPlotCallback);
         }
 
-        public virtual void Plot(IVector vector)
+        public void Plot(IVector vector)
         {
             if (_dimension != vector.coordinate.Length)
             {
@@ -49,12 +59,11 @@ namespace ProximityMatch
                 vector.uniqueId = Unique();
             }
 
-            var v = new VectorNode()
-                {
-                    _vector = vector,
-                    _anglePlain = GenerateAngles(vector),
-                    _distanceOrgin = Distance(new double[2]{ 0, 0 }, new double[2]{ vector.coordinate[0], vector.coordinate[1] })  
-                };
+            var v = new VectorNode(                
+                    vector : vector,
+                    angle: GenerateAngles(vector),
+                    distance : Distance(new double[2]{ 0, 0 }, new double[2]{ vector.coordinate[0], vector.coordinate[1] })  
+                );
 
             Mu += v._anglePlain[0];
             N++;
@@ -77,9 +86,10 @@ namespace ProximityMatch
                 _hashedCollection.Add(v._anglePlain[0], LinkedL);
             }
 
+            plotCallbackHandler(v);
         }
 
-        public virtual void Plot(IList<IVector> vectorList)
+        public void Plot(IList<IVector> vectorList)
         {
             if (vectorList == null)
             {
@@ -92,7 +102,7 @@ namespace ProximityMatch
             }
         }
 
-        public virtual IList<IVector> Nearest(IVector In)
+        public IList<IVector> Nearest(IVector In)
         {
             var angle = GenerateAngles(In);
             var distanceOrgin = Distance(new double[2]{ 0, 0 }, new double[2]{ In.coordinate[0], In.coordinate[1] });
@@ -104,12 +114,12 @@ namespace ProximityMatch
                 {
                     foreach (var hashedDistance in hashedAngles.Value)
                     {
-                        if (InRange(distanceOrgin, hashedDistance.Key, _distance))
+                        if (InRange(distanceOrgin, hashedDistance.Key, GetDistance()))
                         {
                             foreach (var vnode in hashedDistance.Value)
                             {
                                 vnode._vector._distance = Distance(In.coordinate, vnode._vector.coordinate);
-                                if (vnode._vector._distance < _distance)
+                                if (vnode._vector._distance < GetDistance())
                                     if(vnode._vector.uniqueId != In.uniqueId)
                                         candidates.Add(vnode._vector);
                             }
@@ -123,7 +133,7 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public virtual IList<IVector> Nearest(IVector In, Func<bool> condition)
+        public IList<IVector> Nearest(IVector In, Func<bool> condition)
         {
             var angle = GenerateAngles(In);
             var distanceOrgin = Distance(new double[2] { 0, 0 }, new double[2] { In.coordinate[0], In.coordinate[1] });
@@ -135,12 +145,12 @@ namespace ProximityMatch
                 {
                     foreach (var hashedDistance in hashedAngles.Value)
                     {
-                        if (InRange(distanceOrgin, hashedDistance.Key, _distance))
+                        if (InRange(distanceOrgin, hashedDistance.Key, GetDistance()))
                         {
                             foreach (var vnode in hashedDistance.Value)
                             {
                                 vnode._vector._distance = Distance(In.coordinate, vnode._vector.coordinate);
-                                if (vnode._vector._distance < _distance)
+                                if (vnode._vector._distance < GetDistance())
                                     if (vnode._vector.uniqueId != In.uniqueId)
                                         if(condition())
                                             candidates.Add(vnode._vector);
@@ -155,13 +165,13 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public virtual IList<IVector> NearestFullScan(IVector In)
+        public IList<IVector> NearestFullScan(IVector In)
         {
             List<IVector> candidates = new List<IVector>();
             foreach (var vector in GetAll())
                 {
                     vector._distance = Distance(In.coordinate, vector.coordinate);
-                    if (vector._distance < _distance)
+                    if (vector._distance < GetDistance())
                     {
                         if (vector.uniqueId != In.uniqueId)
                             candidates.Add(vector);
@@ -173,7 +183,7 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public virtual IList<IVector> NearestRangeScan(IVector In, double[] range)
+        public IList<IVector> NearestRangeScan(IVector In, double[] range)
         {
             List<IVector> candidates = new List<IVector>();
             bool add;
@@ -200,7 +210,7 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public virtual IList<IVector> Exact(IVector In)
+        public IList<IVector> Exact(IVector In)
         {
             List<IVector> candidates = new List<IVector>();
             var angle = GenerateAngles(In);
@@ -227,7 +237,35 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public virtual IList<IVector> GetAll()
+        public IList<IVector> Exact(IVector In, Func<bool> condition)
+        {
+            List<IVector> candidates = new List<IVector>();
+            var angle = GenerateAngles(In);
+            var distanceOrgin = Distance(new double[2] { 0, 0 }, new double[2] { In.coordinate[0], In.coordinate[1] });
+            if (_hashedCollection.ContainsKey(angle[0]))
+            {
+                var hashedAngles = _hashedCollection[angle[0]];
+                foreach (var hashedDistance in hashedAngles.Keys)
+                {
+                    if (hashedDistance == distanceOrgin)
+                    {
+                        foreach (var vnode in hashedAngles[hashedDistance])
+                        {
+                            vnode._vector._distance = Distance(In.coordinate, vnode._vector.coordinate);
+                            if (vnode._vector._distance == 0)
+                                if (condition())
+                                    candidates.Add(vnode._vector);
+                        }
+                    }
+                }
+            }
+            if (take.HasValue)
+                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+            else
+                return candidates.OrderBy(x => x._distance).ToList();
+        }
+
+        public IList<IVector> GetAll()
         {
             List<IVector> all = new List<IVector>();
             foreach (var hashedAngles in _hashedCollection.Values)
@@ -240,7 +278,7 @@ namespace ProximityMatch
             return all;
         }
        
-        public virtual bool Remove(IVector In)
+        public bool Remove(IVector In)
         {
             bool ret = false;
             var angle = GenerateAngles(In);
@@ -290,7 +328,7 @@ namespace ProximityMatch
             return ret;
         }
 
-        public virtual bool Remove(long uniqueId)
+        public bool Remove(long uniqueId)
         {
             var ret = false;
             if (uniqueId == 0)
@@ -343,7 +381,7 @@ namespace ProximityMatch
             return ret;
         }
 
-        public virtual bool Update(IVector Old, IVector New)
+        public bool Update(IVector Old, IVector New)
         {
             if (New.uniqueId == 0)
             {
@@ -365,7 +403,7 @@ namespace ProximityMatch
             return false;
         }
 
-        public virtual bool Update(long uniqueId, IVector New)
+        public bool Update(long uniqueId, IVector New)
         {
             if (New.uniqueId == 0)
             {
@@ -385,6 +423,18 @@ namespace ProximityMatch
             }
             return false;
         }
+
+ 
+        public virtual void SetDistance(int distance)
+        {
+            _distance = distance;
+        }
+
+        public virtual void SetSpread(int spread)
+        {
+            _spread = spread;
+        }
+
 
     #region private_functions
 
@@ -469,15 +519,22 @@ namespace ProximityMatch
 
             private double StdDev_Angle()
             {
-               var mean = _mean;
-               double sum = 0;
-                sum = _hashedCollection.Sum(x => Math.Pow(x.Key - mean,2));
-
-                if (sum == 0) /* standard deviation = 0 is not ideal so atleast 1 degree of check is required. */
+                if (GetSpread() > 0)
                 {
-                    return 1;
+                    return GetSpread();
                 }
-                return Math.Round(Math.Sqrt(sum / (_hashedCollection.Count > 10 ? N : N-1)),4);
+                else
+                {
+                    var mean = _mean;
+                    double sum = 0;
+                    sum = _hashedCollection.Sum(x => Math.Pow(x.Key - mean, 2));
+
+                    if (sum == 0) /* standard deviation = 0 is not ideal so atleast 1 degree of check is required. */
+                    {
+                        return 1;
+                    }
+                    return Math.Round(Math.Sqrt(sum / (_hashedCollection.Count > 10 ? N : N - 1)), 4);
+                }
             }
 
             private double StdDev_Distance(ICollection<double> Keys)
@@ -489,19 +546,35 @@ namespace ProximityMatch
 
                 if (sum == 0) /* standard deviation = 0 is not ideal so atleast 1 degree of check is required. */
                 {
-                    return _distance / 2;
+                    return GetDistance() / 2;
                 }
                 return Math.Round(Math.Sqrt(sum / (count > 10 ? count : count - 1)), 4);
             }
 
-            private long Unique()
+    #endregion
+
+    #region protected_functions
+
+            protected virtual long Unique()
             {
                 return DateTime.Now.Ticks;
             }
 
-    #endregion
+            protected virtual int GetDistance()
+            {
+                return _distance;
+            }
+
+            protected virtual int GetSpread()
+            {
+                return _spread;
+            }
+        
+            protected virtual void EventPlotCallback(VectorNode vnode)
+            {
+            }
+            
+        #endregion
 
     }
-
-
 }
