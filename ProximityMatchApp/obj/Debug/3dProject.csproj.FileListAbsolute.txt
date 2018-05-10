@@ -1,6 +1,0 @@
-c:\users\midhu\documents\visual studio 2012\Projects\3dProject\3dProject\bin\Debug\3dProject.exe.config
-c:\users\midhu\documents\visual studio 2012\Projects\3dProject\3dProject\bin\Debug\3dProject.exe
-c:\users\midhu\documents\visual studio 2012\Projects\3dProject\3dProject\bin\Debug\3dProject.pdb
-c:\users\midhu\documents\visual studio 2012\Projects\3dProject\3dProject\obj\Debug\3dProject.csprojResolveAssemblyReference.cache
-c:\users\midhu\documents\visual studio 2012\Projects\3dProject\3dProject\obj\Debug\3dProject.exe
-c:\users\midhu\documents\visual studio 2012\Projects\3dProject\3dProject\obj\Debug\3dProject.pdb

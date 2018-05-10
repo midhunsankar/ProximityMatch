@@ -1,6 +1,0 @@
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatchApp.exe.config
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatchApp.exe
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\bin\Debug\ProximityMatchApp.pdb
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\obj\Debug\ProximityMatchApp.csprojResolveAssemblyReference.cache
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\obj\Debug\ProximityMatchApp.exe
-G:\WorkshopLab\ProximityMatch\ProximityMatch\ProximityMatch\obj\Debug\ProximityMatchApp.pdb
