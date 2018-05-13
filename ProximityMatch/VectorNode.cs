@@ -15,15 +15,15 @@ namespace ProximityMatch
 {
     public sealed class VectorNode
     {
-        public readonly IVector _vector;
+        public readonly long _uniqueID;
         public readonly double[] _anglePlain;
         public readonly double _distanceOrgin;
 
-        public VectorNode(IVector vector, double[] angle, double distance)
+        public VectorNode(long uniqueid, double[] angle, double distance)
         {
-            _vector = vector;
             _anglePlain = angle;
             _distanceOrgin = distance;
+            _uniqueID = uniqueid;
         }
     }
 }

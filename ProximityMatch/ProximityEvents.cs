@@ -28,7 +28,7 @@ namespace ProximityMatch
         public bool? status { get; protected set; }
         public readonly VectorNode vnode;
         public PlotEventArgs(VectorNode _vnode, bool? _status = null)
-            : base(_vnode._vector.uniqueId)
+            : base(_vnode._uniqueID)
         {
             vnode = _vnode;
             status = _status;
@@ -40,7 +40,7 @@ namespace ProximityMatch
         public bool? status { get; protected set; }
         public readonly VectorNode vnode;
         public UpdateEventArgs(VectorNode _vnode, bool? _status = null)
-            : base(_vnode._vector.uniqueId)
+            : base(_vnode._uniqueID)
         {
             vnode = _vnode;
             status = _status;
