@@ -25,7 +25,7 @@ namespace ProximityMatch
 
         protected readonly IDictionary<double, IDictionary<double, List<VectorNode>>> _hashedCollection;
         protected readonly IDictionary<long, IVector> _hashedDictionary;
-
+        protected IDictionary<double,List<long>>[] _hashes;
 
         public event FinishedEventHandler FinishedPloting;
         public event FinishedEventHandler FinishedRemove;
@@ -34,6 +34,7 @@ namespace ProximityMatch
         private double _mean { get { return Mu / N; } }
         private Random _rand;
 
+
         public Vector(
             int dimension = 3, 
             int distance = 5,
@@ -41,9 +42,13 @@ namespace ProximityMatch
             )
         {
             _dimension = dimension;
+                        
             _hashedCollection = new Dictionary<double, IDictionary<double, List<VectorNode>>>();
             _hashedDictionary = new Dictionary<long, IVector>();
+            _hashes = new Dictionary<double, List<long>>[dimension];
+
             _rand = new Random();
+            
             SetDistance(distance);
             SetSpread(spread);
         }
@@ -96,6 +101,8 @@ namespace ProximityMatch
                 _hashedCollection.Add(angle, LinkedL);
                 _hashedDictionary.Add(vnode._uniqueID, vector);
             }
+            //SetCoordinateStat(vector.coordinate);
+            AddIndex(vector);
             EventFinishedPloting(new PlotEventArgs(vnode));
         }
 
@@ -299,6 +306,84 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
+        public IList<IVector> Find(IVector In)
+        {
+            IList<IVector> ret = new List<IVector>();
+            IEnumerable<long> uniqueKeys = new List<long>();
+            for (int i = 0; i < _dimension; i++)
+            {
+                if (In.coordinate[i] != default(double))
+                {
+                   var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i]) : -10 * Math.Log10(-1 * In.coordinate[i]);
+                   if (_hashes[i].ContainsKey(hashKey))
+                   {
+                       if (uniqueKeys.Count() == 0)
+                       {
+                           ((List<long>)uniqueKeys).AddRange(_hashes[i][hashKey]);
+                       }
+                       else
+                       {
+                           uniqueKeys = uniqueKeys.Intersect(_hashes[i][hashKey]);
+                       }
+                   }
+                   else
+                   {
+                       uniqueKeys = new List<long>();
+                       break;
+                   }
+                }
+            }
+
+            if (uniqueKeys.Count() > 0)
+            {
+                foreach (var unique in uniqueKeys)
+                {
+                    ret.Add(_hashedDictionary[unique]);
+                }
+            }
+            return ret;
+        }
+
+        public IList<IVector> Find(IVector In, Func<bool> condition)
+        {
+            IList<IVector> ret = new List<IVector>();
+            IEnumerable<long> uniqueKeys = new List<long>();
+            for (int i = 0; i < _dimension; i++)
+            {
+                if (In.coordinate[i] != default(double))
+                {
+                    var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i]) : -10 * Math.Log10(-1 * In.coordinate[i]);
+                    if (_hashes[i].ContainsKey(hashKey))
+                    {
+                        if (uniqueKeys.Count() == 0)
+                        {
+                            ((List<long>)uniqueKeys).AddRange(_hashes[i][hashKey]);
+                        }
+                        else
+                        {
+                            uniqueKeys = uniqueKeys.Intersect(_hashes[i][hashKey]);
+                        }
+                    }
+                    else
+                    {
+                        uniqueKeys = new List<long>();
+                        break;
+                    }
+                }
+            }
+
+            if (uniqueKeys.Count() > 0)
+            {
+                foreach (var unique in uniqueKeys)
+                {
+                    if(condition())
+                        ret.Add(_hashedDictionary[unique]);
+                }
+            }
+            return ret;
+        }
+
+
         public IList<IVector> GetAll()
         {
             return _hashedDictionary.Values.ToList();
@@ -457,7 +542,26 @@ namespace ProximityMatch
             return false;
         }
 
- 
+        public void AddIndex(IVector In)
+        {
+           for (int i = 0; i < _dimension; i++)
+           {
+                var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i]) : -10 * Math.Log10(-1 * In.coordinate[i]);
+                if (_hashes[i] == null)
+                    _hashes[i] = new Dictionary<double, List<long>>();
+
+                if (_hashes[i].ContainsKey(hashKey))
+                {
+                    _hashes[i][hashKey].Add(In.uniqueId);
+                }
+                else
+                {
+                    _hashes[i].Add(hashKey, new List<long>());
+                    _hashes[i][hashKey].Add(In.uniqueId);
+                }
+            }
+        }
+
         public virtual void SetDistance(int distance)
         {
             _distance = distance;
