@@ -241,6 +241,36 @@ namespace ProximityTest
             
         }
 
+        [TestMethod]
+        public void FindSuccess()
+        {
+            _cars.Plot(new car() { odometer = 1000, year = 2001, price = 5500 });
+            _cars.Plot(new car() { odometer = 2000, year = 2000, price = 5000 });
+            _cars.Plot(new car() { odometer = 3000, year = 1999, price = 4500 });
+
+            //Should return only 1 result.
+            var _carL = _cars.Find(new car() { year = 2000 });
+            Assert.IsTrue(_carL.Count == 1 && ((car)_carL[0]).year == 2000);
+            //Should return only 1 result.
+            _carL = _cars.Find(new car() { odometer = 2000, year = 2000 });
+            Assert.IsTrue(_carL.Count == 1 && ((car)_carL[0]).year == 2000);
+        }
+
+        [TestMethod]
+        public void FindFail()
+        {
+            _cars.Plot(new car() { odometer = 1000, year = 2001, price = 5500 });
+            _cars.Plot(new car() { odometer = 2000, year = 2000, price = 5000 });
+            _cars.Plot(new car() { odometer = 2000, year = 1999, price = 4500 });
+
+            //Should return only 1 result.
+            var _carL = _cars.Find(new car() { year = 2002 });
+            Assert.IsTrue(_carL.Count == 0);
+            //Should return only 1 result.
+            _carL = _cars.Find(new car() { odometer = 2000, year = 1998 });
+            Assert.IsTrue(_carL.Count == 0);
+        }
+
     }
 
     [TestClass]
