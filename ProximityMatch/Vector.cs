@@ -157,7 +157,7 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public IList<IVector> Nearest(IVector In, Func<bool> condition)
+        public IList<IVector> Nearest(IVector In, Func<IVector, bool> condition)
         {
             var angles = GenerateAngles(In);
             var distanceOrgin = Distance(In.coordinate, CreateDefault(In.coordinate.Length));
@@ -181,7 +181,7 @@ namespace ProximityMatch
                                 if (_distance < GetDistance())
                                     if (_vnodeObj.uniqueId != In.uniqueId)
                                     {
-                                        if (condition())
+                                        if (condition(_vnodeObj))
                                         {
                                             _vnodeObj._distance = _distance;
                                             candidates.Add(_vnodeObj);
@@ -274,7 +274,7 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public IList<IVector> Exact(IVector In, Func<bool> condition)
+        public IList<IVector> Exact(IVector In, Func<IVector, bool> condition)
         {
             List<IVector> candidates = new List<IVector>();
             var angles = GenerateAngles(In);
@@ -294,7 +294,7 @@ namespace ProximityMatch
                             var _vnodeObj = _hashedDictionary[vnode._uniqueID];
                             _distance = Distance(In.coordinate, _vnodeObj.coordinate);
                             if (_distance == 0)
-                                if(condition())
+                                if (condition(_vnodeObj))
                                     candidates.Add(_vnodeObj);
                         }
                     }
@@ -344,7 +344,7 @@ namespace ProximityMatch
             return ret;
         }
 
-        public IList<IVector> Find(IVector In, Func<bool> condition)
+        public IList<IVector> Find(IVector In, Func<IVector, bool> condition)
         {
             IList<IVector> ret = new List<IVector>();
             IEnumerable<long> uniqueKeys = new List<long>();
@@ -376,8 +376,9 @@ namespace ProximityMatch
             {
                 foreach (var unique in uniqueKeys)
                 {
-                    if(condition())
-                        ret.Add(_hashedDictionary[unique]);
+                    var v = _hashedDictionary[unique];
+                    if(condition(v))
+                        ret.Add(v);
                 }
             }
             return ret;
