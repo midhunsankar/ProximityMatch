@@ -271,6 +271,27 @@ namespace ProximityTest
             Assert.IsTrue(_carL.Count == 0);
         }
 
+        [TestMethod]
+        public void FindbyConditionSuccess()
+        {
+            _cars.Plot(new car() { odometer = 1000, year = 2001, price = 5500 });
+            _cars.Plot(new car() { odometer = 2000, year = 2000, price = 5000 });
+            _cars.Plot(new car() { odometer = 3000, year = 1999, price = 4500 });
+
+            //Should return only 1 result.
+            var _carL = _cars.Find(new car() { year = 2000 }, x => ((car)x).price == 5000);
+            Assert.IsTrue(_carL.Count == 1 && ((car)_carL[0]).year == 2000);    
+         }
+
+        [TestMethod]
+        public void FindById()
+        {
+            _cars.Plot(new car() { uniqueId = 10025, odometer = 1000, year = 2001, price = 5500 });
+
+            //Should return only 1 result.
+            var _carL = _cars.Find(10025);
+            Assert.IsNotNull(_carL);   
+        }
     }
 
     [TestClass]
