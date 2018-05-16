@@ -121,7 +121,11 @@ namespace ProximityMatch
 
         public IList<IVector> Nearest(IVector In)
         {
-            var candidates = Nearest_Func(In: In);
+            var candidates = new List<IVector>();
+            foreach (var c in Nearest_Func(In: In))
+            {
+                candidates.Add(c);
+            }
             if (take.HasValue)
                 return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
             else
@@ -130,7 +134,12 @@ namespace ProximityMatch
 
         public IList<IVector> Nearest(IVector In, Func<IVector, bool> condition)
         {
-            var candidates = Nearest_Func(In: In).Where(x => condition(x));
+            var candidates = new List<IVector>();
+            foreach (var c in Nearest_Func(In: In))
+            {
+                if(condition(c))
+                    candidates.Add(c);
+            }
             if (take.HasValue)
                 return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
             else
@@ -155,36 +164,40 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public IList<IVector> NearestRangeScan(IVector In, double[] range)
-        {
-            List<IVector> candidates = new List<IVector>();
-            bool add;
-            foreach (var vector in GetAll())
-            {
-                add = true;
-                for (int i = 0; i < range.Count(); i++)
-                {
-                    if (!InRange(In.coordinate[i], vector.coordinate[i], range[i]))
-                    {
-                        add = false;
-                        break;
-                    }
-                }
-                if (add)
-                {
-                    if (vector.uniqueId != In.uniqueId)
-                        candidates.Add(vector);
-                }
-            }
-            if (take.HasValue)
-                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
-            else
-                return candidates.OrderBy(x => x._distance).ToList();
-        }
+        //public IList<IVector> NearestRangeScan(IVector In, double[] range)
+        //{
+        //    List<IVector> candidates = new List<IVector>();
+        //    bool add;
+        //    foreach (var vector in GetAll())
+        //    {
+        //        add = true;
+        //        for (int i = 0; i < range.Count(); i++)
+        //        {
+        //            if (!InRange(In.coordinate[i], vector.coordinate[i], range[i]))
+        //            {
+        //                add = false;
+        //                break;
+        //            }
+        //        }
+        //        if (add)
+        //        {
+        //            if (vector.uniqueId != In.uniqueId)
+        //                candidates.Add(vector);
+        //        }
+        //    }
+        //    if (take.HasValue)
+        //        return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+        //    else
+        //        return candidates.OrderBy(x => x._distance).ToList();
+        //}
 
         public IList<IVector> Exact(IVector In)
         {
-            var candidates = Exact_Func(In: In);
+            var candidates = new List<IVector>();
+            foreach (var c in Exact_Func(In: In))
+            {
+                candidates.Add(c);
+            }
             if (take.HasValue)
                 return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
             else
@@ -193,37 +206,65 @@ namespace ProximityMatch
 
         public IList<IVector> Exact(IVector In, Func<IVector, bool> condition)
         {
-            var candidates = Exact_Func(In: In).Where(x => condition(x));
+            var candidates = new List<IVector>();
+            foreach (var c in Exact_Func(In: In))
+            {
+                if(condition(c))
+                    candidates.Add(c);
+            }
             if (take.HasValue)
                 return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
             else
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
+        public IVector Find(long uniqueId)
+        {
+            if (_hashedDictionary.ContainsKey(uniqueId))
+                return _hashedDictionary[uniqueId];
+            return null;
+        }
+
         public IList<IVector> Find(IVector In)
         {
             IList<IVector> ret = new List<IVector>();
-            var uniqueKeys = Find_Func(In: In);
-            if (uniqueKeys.Count() > 0)
+            IList<long> uniqueKeys = new List<long>();            
+            foreach (var u in Find_Func(In: In))
             {
-                foreach (var unique in uniqueKeys)
+                foreach (var v in u)
                 {
-                    ret.Add(_hashedDictionary[unique]);
-                }
-            }
+                    if(!uniqueKeys.Contains(v))
+                    {
+                        var _vObj = _hashedDictionary[v];
+                        if(InRange(In.coordinate, _vObj.coordinate))
+                        {
+                            uniqueKeys.Add(v);
+                            ret.Add(_vObj);
+                        }                            
+                    }
+                 }
+             }
             return ret;
         }
 
         public IList<IVector> Find(IVector In, Func<IVector, bool> condition)
         {
             IList<IVector> ret = new List<IVector>();
-            var uniqueKeys = Find_Func(In: In);
-            if (uniqueKeys.Count() > 0)
+            IList<long> uniqueKeys = new List<long>();
+            foreach (var u in Find_Func(In: In))
             {
-                foreach (var unique in uniqueKeys)
+                foreach (var v in u)
                 {
-                    if (condition(_hashedDictionary[unique]))
-                        ret.Add(_hashedDictionary[unique]);
+                    if (!uniqueKeys.Contains(v))
+                    {
+                        var _vObj = _hashedDictionary[v];
+                        if (InRange(In.coordinate, _vObj.coordinate))
+                        {
+                            uniqueKeys.Add(v);
+                            if(condition(_vObj))
+                                ret.Add(_vObj);
+                        }
+                    }
                 }
             }
             return ret;
@@ -420,12 +461,12 @@ namespace ProximityMatch
 
         #region private_functions
 
-        private IList<IVector> Nearest_Func(IVector In)
+        private IEnumerable<IVector> Nearest_Func(IVector In)
         {
             var angles = GenerateAngles(In);
             var distanceOrgin = Distance(In.coordinate, CreateDefault(In.coordinate.Length));
             distanceOrgin = Math.Truncate(distanceOrgin / 10);
-            List<IVector> candidates = new List<IVector>();
+            //List<IVector> candidates = new List<IVector>();
             var sdAngle = StdDev_Angle();
             double _distance;
             var angle = Math.Truncate(angles[0]);
@@ -445,19 +486,17 @@ namespace ProximityMatch
                                     if (_vnodeObj.uniqueId != In.uniqueId)
                                     {
                                         _vnodeObj._distance = _distance;
-                                        candidates.Add(_vnodeObj);
+                                        yield return _vnodeObj;
                                     }
                             }
                         }
                     }
                 }
             }
-            return candidates;
         }
 
-        private IList<IVector> Exact_Func(IVector In)
+        private IEnumerable<IVector> Exact_Func(IVector In)
         {
-            List<IVector> candidates = new List<IVector>();
             var angles = GenerateAngles(In);
             var distanceOrgin = Distance(In.coordinate, CreateDefault(In.coordinate.Length));
             distanceOrgin = Math.Truncate(distanceOrgin / 10);
@@ -475,17 +514,15 @@ namespace ProximityMatch
                             var _vnodeObj = _hashedDictionary[vnode._uniqueID];
                             _distance = Distance(In.coordinate, _vnodeObj.coordinate);
                             if (_distance == 0)
-                                candidates.Add(_vnodeObj);
+                              yield return _vnodeObj;
                         }
                     }
                 }
-            }
-            return candidates;
+            }           
         }
 
-        private IEnumerable<long> Find_Func(IVector In)
+        private IEnumerable<IList<long>> Find_Func(IVector In)
         {
-            IEnumerable<long> uniqueKeys = new List<long>();
             for (int i = 0; i < _dimension; i++)
             {
                 if (In.coordinate[i] != default(double))
@@ -493,23 +530,10 @@ namespace ProximityMatch
                     var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i]) : -10 * Math.Log10(-1 * In.coordinate[i]);
                     if (_hashes[i].ContainsKey(hashKey))
                     {
-                        if (uniqueKeys.Count() == 0)
-                        {
-                            ((List<long>)uniqueKeys).AddRange(_hashes[i][hashKey]);
-                        }
-                        else
-                        {
-                            uniqueKeys = uniqueKeys.Intersect(_hashes[i][hashKey]);
-                        }
-                    }
-                    else
-                    {
-                        uniqueKeys = new List<long>();
-                        break;
+                        yield return _hashes[i][hashKey]; ;
                     }
                 }
             }
-            return uniqueKeys;
         }
 
         private double[] GenerateAngles(IVector vector)
@@ -561,10 +585,21 @@ namespace ProximityMatch
 
         private bool InRange(double[] c1, double[] c2, double deviation)
         {
-
             for (int i = 0; i < c1.Length; i++)
             {
                 if (!(c2[i] >= (c1[i] - deviation) && c2[i] <= (c1[i] + deviation)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private bool InRange(double[] c1, double[] c2)
+        {
+            for (int i = 0; i < c1.Length; i++)
+            {
+                if (c1[i] != default(double) && c2[i] != c1[i])
                 {
                     return false;
                 }
