@@ -18,7 +18,7 @@ namespace ProximityTest
         public void plotInvalidNumberOfDimension()
         {
             car _car = new car();
-            _car.coordinate = new double[2];
+            _car.coordinate = new double?[2];
             try
             {
                 _cars.Plot(_car);
@@ -38,7 +38,7 @@ namespace ProximityTest
         public void plotInvalidAtleast2Dimension()
         {
             car _car = new car();
-            _car.coordinate = new double[1];
+            _car.coordinate = new double?[1];
             try
             {
                 _cars.Plot(_car);
@@ -297,8 +297,8 @@ namespace ProximityTest
     [TestClass]
     public class car : IVector
     {
-        private double[] _coordinateP = new double[3];
-        public double[] coordinate
+        private double?[] _coordinateP = new double?[3];
+        public double?[] coordinate
         {
             get { return _coordinateP; }
             set { _coordinateP = value; }
