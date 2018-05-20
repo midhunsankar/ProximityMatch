@@ -12,6 +12,7 @@ namespace ProximityMatch.Exceptions
         {
         }
     }
+
     public class UniqueIdExceptions : System.Exception
     {
         public UniqueIdExceptions(string message)
@@ -19,6 +20,15 @@ namespace ProximityMatch.Exceptions
         {
         }
     }
+
+    public class CoordinateExceptions : System.Exception
+    {
+        public CoordinateExceptions(string message)
+            : base(message: message)
+        {
+        }
+    }
+
 
 
 }
