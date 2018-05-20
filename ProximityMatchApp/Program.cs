@@ -22,8 +22,11 @@ namespace ProximityMatchApp
             //SampleCars _carsObj = new SampleCars();
             //_carsObj.Run();
 
-            SamplePatient _patientObj = new SamplePatient();
-            _patientObj.Run();
+            //SamplePatient _patientObj = new SamplePatient();
+            //_patientObj.Run();
+
+            SampleFoodStatistics _foodObj = new SampleFoodStatistics();
+            _foodObj.Run();
             
         }        
     }

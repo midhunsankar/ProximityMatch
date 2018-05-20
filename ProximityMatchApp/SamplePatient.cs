@@ -63,7 +63,7 @@ namespace ProximityMatchApp
             var vnode= e as PlotEventArgs;
         }
 
-        public IList<IVector> LoadDataSet(int dimention = 2)
+        private IList<IVector> LoadDataSet(int dimention = 2)
         {
             IList<IVector> dataSet = new List<IVector>();
             var table = ReadCsvFile("Home_Health_Care_-_Patient_survey__HHCAHPS__State_Data.csv");
@@ -83,11 +83,11 @@ namespace ProximityMatchApp
 
                         if (dimention == 2)
                         {
-                            patient.setCoordinates(new double[2] { patient.professional, patient.communicated });
+                            patient.setCoordinates(new double?[2] { patient.professional, patient.communicated });
                         }
                         else if (dimention == 3)
                         {
-                            patient.setCoordinates(new double[3] { patient.professional, patient.communicated, patient.discussed });
+                            patient.setCoordinates(new double?[3] { patient.professional, patient.communicated, patient.discussed });
                         }
 
                     dataSet.Add(patient);
@@ -96,7 +96,7 @@ namespace ProximityMatchApp
             return dataSet;
         }
 
-        public DataTable ReadCsvFile(string fileName)
+        private DataTable ReadCsvFile(string fileName)
         {
 
             DataTable dtCsv = new DataTable();
@@ -144,9 +144,9 @@ namespace ProximityMatchApp
     {
         public long uniqueId { get; set; }
 
-        private double[] coordinateP = new double[2];
+        private double?[] coordinateP = new double?[2];
 
-        public double[] coordinate
+        public double?[] coordinate
         {
             get { return coordinateP; }
             set { coordinateP = value; }
@@ -177,7 +177,7 @@ namespace ProximityMatchApp
         //Response rate
         public int rate { get; set; }
 
-        public void setCoordinates(double[] co)
+        public void setCoordinates(double?[] co)
         {
             coordinateP = co;
         }

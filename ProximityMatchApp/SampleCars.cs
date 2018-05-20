@@ -12,12 +12,12 @@ namespace ProximityMatchApp
         public void Run()
         {
             Vector carList = new Vector(dimension: 5);
-            carList.take = 10;
+            carList.take = 5;
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
 
             Random rnd = new Random();
             double x, y, z, p = 0, q = 0;
-            int maxlimit = 100000;
+            int maxlimit = 1000000;
             sw.Start();
 
             for (int i = 0; i < maxlimit; i++)
@@ -161,8 +161,8 @@ namespace ProximityMatchApp
 
         /* IVector implimentation. */
         public double _distance { get; set; }
-        private double[] coordinateP = new double[5];
-        public double[] coordinate { get { return coordinateP; } set { coordinateP = value; } }
+        private double?[] coordinateP = new double?[5];
+        public double?[] coordinate { get { return coordinateP; } set { coordinateP = value; } }
 
     }
 }
