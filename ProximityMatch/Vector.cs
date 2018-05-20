@@ -132,7 +132,7 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public IList<IVector> Nearest(IVector In, Func<IVector, bool> condition)
+        public IList<IVector> Nearest(IVector In, Func<IVector, bool> condition, Func<IVector,double> orderby = null)
         {
             var candidates = new List<IVector>();
             foreach (var c in Nearest_Func(In: In))
@@ -140,10 +140,14 @@ namespace ProximityMatch
                 if(condition(c))
                     candidates.Add(c);
             }
+            if (orderby == null)
+            {
+                orderby = x => x._distance;
+            }
             if (take.HasValue)
-                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+                return candidates.OrderBy(orderby).Take(take.Value).ToList();
             else
-                return candidates.OrderBy(x => x._distance).ToList();
+                return candidates.OrderBy(orderby).ToList();
         }
 
         public IList<IVector> NearestFullScan(IVector In)
@@ -204,7 +208,7 @@ namespace ProximityMatch
                 return candidates.OrderBy(x => x._distance).ToList();
         }
 
-        public IList<IVector> Exact(IVector In, Func<IVector, bool> condition)
+        public IList<IVector> Exact(IVector In, Func<IVector, bool> condition, Func<IVector, double> orderby = null)
         {
             var candidates = new List<IVector>();
             foreach (var c in Exact_Func(In: In))
@@ -212,10 +216,14 @@ namespace ProximityMatch
                 if(condition(c))
                     candidates.Add(c);
             }
+            if (orderby == null)
+            {
+                orderby = x => x._distance;
+            }
             if (take.HasValue)
-                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+                return candidates.OrderBy(orderby).Take(take.Value).ToList();
             else
-                return candidates.OrderBy(x => x._distance).ToList();
+                return candidates.OrderBy(orderby).ToList();
         }
 
         public IVector Find(long uniqueId)
@@ -227,7 +235,7 @@ namespace ProximityMatch
 
         public IList<IVector> Find(IVector In)
         {
-            IList<IVector> ret = new List<IVector>();
+            IList<IVector> candidates = new List<IVector>();
             IList<long> uniqueKeys = new List<long>();            
             foreach (var u in Find_Func(In: In))
             {
@@ -239,35 +247,64 @@ namespace ProximityMatch
                         if(InRange(In.coordinate, _vObj.coordinate))
                         {
                             uniqueKeys.Add(v);
-                            ret.Add(_vObj);
+                            candidates.Add(_vObj);
                         }                            
                     }
                  }
              }
-            return ret;
+            return candidates;
         }
 
-        public IList<IVector> Find(IVector In, Func<IVector, bool> condition)
+        public IList<IVector> Find(IVector In, Func<IVector, bool> condition, Func<IVector, double> orderby = null)
         {
-            IList<IVector> ret = new List<IVector>();
+            IList<IVector> candidates = new List<IVector>();
             IList<long> uniqueKeys = new List<long>();
-            foreach (var u in Find_Func(In: In))
+            bool fullscan = true;
+
+            foreach(var c in In.coordinate)
             {
-                foreach (var v in u)
+                if(c != default(double))
                 {
-                    if (!uniqueKeys.Contains(v))
+                    fullscan = false;
+                    break;
+                }
+            }
+
+            if (fullscan)
+            {
+                foreach (var _vObj in GetAll())
+                {
+                    if (condition(_vObj))
+                        candidates.Add(_vObj);
+                }
+            }
+            else
+            {
+                foreach (var u in Find_Func(In: In))
+                {
+                    foreach (var v in u)
                     {
-                        var _vObj = _hashedDictionary[v];
-                        if (InRange(In.coordinate, _vObj.coordinate))
+                        if (!uniqueKeys.Contains(v))
                         {
-                            uniqueKeys.Add(v);
-                            if(condition(_vObj))
-                                ret.Add(_vObj);
+                            var _vObj = _hashedDictionary[v];
+                            if (InRange(In.coordinate, _vObj.coordinate))
+                            {
+                                uniqueKeys.Add(v);
+                                if (condition(_vObj))
+                                    candidates.Add(_vObj);
+                            }
                         }
                     }
                 }
             }
-            return ret;
+            if (orderby == null)
+            {
+                orderby = x => x._distance;
+            }
+            if (take.HasValue)
+                return candidates.OrderBy(orderby).Take(take.Value).ToList();
+            else
+                return candidates.OrderBy(orderby).ToList();
         }
 
         public IList<IVector> GetAll()
