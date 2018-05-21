@@ -24,11 +24,11 @@ namespace ProximityTest
                 _cars.Plot(_car);
                 Assert.Fail();
             }
-            catch (ProximityMatch.Exceptions.DimensionExceptions ex)
+            catch (ProximityMatch.Exceptions.DimensionExceptions)
             {
                 // Expected result.
             }
-            catch (Exception ex)
+            catch
             {
                 Assert.Fail();
             }
@@ -44,11 +44,11 @@ namespace ProximityTest
                 _cars.Plot(_car);
                 Assert.Fail();
             }
-            catch (ProximityMatch.Exceptions.DimensionExceptions ex)
+            catch (ProximityMatch.Exceptions.DimensionExceptions)
             {
                 // Expected result.
             }
-            catch (Exception ex)
+            catch
             {
                 Assert.Fail();
             }
@@ -157,6 +157,7 @@ namespace ProximityTest
             _cars.Plot(new car() { odometer = 2000, year = 2000, price = 4000 });
             _cars.Plot(new car() { odometer = 3000, year = 2000, price = 3000 });
             _cars.Plot(new car() { odometer = 2000, year = 2000, price = -4000 });
+            _cars.Plot(new car() { odometer = 2000, year = 2000, price = 4000 });
 
             var _car = new car() { odometer = 2000, year = 2000, price = 4000 };
             Assert.IsTrue(_cars.Remove(_car));
@@ -169,6 +170,8 @@ namespace ProximityTest
             _cars.Plot(new car() { uniqueId = 11, odometer = 2000, year = 2000, price = 4000 });
             _cars.Plot(new car() { uniqueId = 12, odometer = 3000, year = 2000, price = 3000 });
             _cars.Plot(new car() { uniqueId = 13, odometer = 2000, year = 2000, price = -4000 });
+            _cars.Plot(new car() { uniqueId = 14, odometer = 2000, year = 2000, price = 8000 });
+            _cars.Plot(new car() { uniqueId = 15, odometer = 3000, year = 2000, price = 9000 });
             
              Assert.IsTrue(_cars.Remove(13));
         }
@@ -179,8 +182,18 @@ namespace ProximityTest
             _cars.Plot(new car() { uniqueId = 10, odometer = 1000, year = 2000, price = 5000 });
             _cars.Plot(new car() { uniqueId = 11, odometer = 2000, year = 2000, price = 4000 });
             _cars.Plot(new car() { uniqueId = 12, odometer = 3000, year = 2000, price = 3000 });
-         
-            Assert.IsFalse(_cars.Remove(15));
+            try
+            {
+                Assert.IsFalse(_cars.Remove(15));
+            }
+            catch (ProximityMatch.Exceptions.UniqueIdExceptions)
+            {
+                // Expected result.
+            }
+            catch
+            {
+                Assert.Fail();
+            }
         }
 
         [TestMethod]
@@ -208,11 +221,11 @@ namespace ProximityTest
                 _cars.Update(Old: Old, New: New);
                 Assert.Fail();
             }
-            catch(ProximityMatch.Exceptions.UniqueIdExceptions ex)
+            catch(ProximityMatch.Exceptions.UniqueIdExceptions)
             {
                 // Expected.
             }
-            catch(Exception ex)
+            catch
             {
                 Assert.Fail();
             }
@@ -230,11 +243,11 @@ namespace ProximityTest
                 _cars.Update(Old.uniqueId, New);
                 Assert.Fail();
             }
-            catch (ProximityMatch.Exceptions.UniqueIdExceptions ex)
+            catch (ProximityMatch.Exceptions.UniqueIdExceptions)
             {
                 // Expected.
             }
-            catch (Exception ex)
+            catch
             {
                 Assert.Fail();
             }
