@@ -393,112 +393,39 @@ namespace ProximityMatch
 
         public bool Remove(IVector In)
         {
-            bool ret = false;
-            var angles = GenerateAngles(In);
-            var distanceOrgin = Distance(In.coordinate, CreateDefault(In.coordinate.Length));
-            distanceOrgin = Math.Truncate(distanceOrgin / 10);
-            var angle = Math.Truncate(angles[0]);
-            if (_hashedCollection.ContainsKey(angle))
+            List<long> uniqueIds;
+            if (RemoveVector(In: In, uniqueIds: out uniqueIds))
             {
-                var hashedDistances = _hashedCollection[angle];
-                int i = 0;
-
-                while (i < hashedDistances.Count)
+                foreach (var uniq in uniqueIds)
                 {
-                    var _hashedDistanceOrgin = hashedDistances.ElementAt(i).Key;
-                    if (_hashedDistanceOrgin == distanceOrgin)
-                    {
-                        int j = 0;
-                        var _vectorNodeList = hashedDistances.ElementAt(i).Value;
-                        while (j < _vectorNodeList.Count)
-                        {
-                            var vnode = _vectorNodeList[j];
-                            var vnodeObj = _hashedDictionary[vnode._uniqueID];
-                            if (Distance(In.coordinate, vnodeObj.coordinate) == 0)
-                            {
-                                Mu -= vnode._anglePlain[0];
-                                N--;
-                                //remove node.
-                                _vectorNodeList.RemoveAt(j);
-                                _hashedDictionary.Remove(vnodeObj.uniqueId);
-                                ret = true;
-                                EventFinishedRemove(new RemoveEventArgs(vnode._uniqueID, true));
-                                j--;
-                            }
-                            j++;
-                        }
-
-                        if (hashedDistances[_hashedDistanceOrgin] == null || hashedDistances[_hashedDistanceOrgin].Count == 0)
-                        {
-                            //No nodes empty dictionary so remove the key from parent.
-                            hashedDistances.Remove(_hashedDistanceOrgin);
-                            i--;
-                        }
-                    }
-                    i++;
+                    RemoveIndex(_hashedDictionary[uniq]);
+                    _hashedDictionary.Remove(uniq);
+                    EventFinishedRemove(new RemoveEventArgs(uniq, true));
                 }
-                if (_hashedCollection[angle] == null || _hashedCollection[angle].Count == 0)
-                {
-                    //No nodes empty dictionary so remove the key from parent.
-                    _hashedCollection.Remove(angle);
-                }
-            }
-            return ret;
+                return true;
+            }            
+            return false;
         }
 
         public bool Remove(long uniqueId)
         {
-            var ret = false;
-            if (uniqueId == 0)
+            if (!_hashedDictionary.ContainsKey(uniqueId))
             {
-                throw new UniqueIdExceptions("UniqueId not set!!");
+                throw new UniqueIdExceptions("UniqueId not found!!");
             }
-
-            int i = 0;
-            while (i < _hashedCollection.Count)
+            List<long> uniqueIds;
+            IVector In = _hashedDictionary[uniqueId];
+            if (RemoveVector(In: In, uniqueIds: out uniqueIds))
             {
-                var angleKey = _hashedCollection.ElementAt(i).Key;
-                var hashedDistance = _hashedCollection[angleKey];
-                int j = 0;
-
-                while (j < hashedDistance.Count)
+                foreach (var uniq in uniqueIds)
                 {
-                    var distanceKey = hashedDistance.ElementAt(j).Key;
-                    var _vectorNodeList = hashedDistance[distanceKey];
-                    int k = 0;
-
-                    while (k < _vectorNodeList.Count)
-                    {
-                        if (uniqueId == _vectorNodeList[k]._uniqueID)
-                        {
-                            Mu -= _vectorNodeList[k]._anglePlain[0];
-                            N--;
-                            _vectorNodeList.RemoveAt(k);
-                            _hashedDictionary.Remove(uniqueId);
-                            ret = true;
-                            EventFinishedRemove(new RemoveEventArgs(uniqueId, true));
-                            break;
-                        }
-                        k++;
-                    }
-
-                    if (ret && (_vectorNodeList == null || _vectorNodeList.Count == 0))
-                    {
-                        hashedDistance.Remove(distanceKey);
-                        break;
-                    }
-
-                    j++;
+                    RemoveIndex(_hashedDictionary[uniq]);
+                    _hashedDictionary.Remove(uniq);
+                    EventFinishedRemove(new RemoveEventArgs(uniq, true));
                 }
-
-                if (ret && (hashedDistance == null || hashedDistance.Count == 0))
-                {
-                    _hashedCollection.Remove(angleKey);
-                    break;
-                }
-                i++;
+                return true;
             }
-            return ret;
+            return false;
         }
 
         public bool Update(IVector Old, IVector New)
@@ -542,26 +469,6 @@ namespace ProximityMatch
                 }
             }
             return false;
-        }
-
-        public void AddIndex(IVector In)
-        {
-            for (int i = 0; i < _dimension; i++)
-            {
-                var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i].Value) : -10 * Math.Log10(-1 * In.coordinate[i].Value);
-                if (_hashes[i] == null)
-                    _hashes[i] = new Dictionary<double, List<long>>();
-
-                if (_hashes[i].ContainsKey(hashKey))
-                {
-                    _hashes[i][hashKey].Add(In.uniqueId);
-                }
-                else
-                {
-                    _hashes[i].Add(hashKey, new List<long>());
-                    _hashes[i][hashKey].Add(In.uniqueId);
-                }
-            }
         }
 
         public virtual void SetDistance(int distance)
@@ -650,6 +557,118 @@ namespace ProximityMatch
                     }
                 }
             }
+        }
+
+        private void AddIndex(IVector In)
+        {
+            for (int i = 0; i < _dimension; i++)
+            {
+                var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i].Value) : -10 * Math.Log10(-1 * In.coordinate[i].Value);
+                if (_hashes[i] == null)
+                    _hashes[i] = new Dictionary<double, List<long>>();
+
+                if (_hashes[i].ContainsKey(hashKey))
+                {
+                    _hashes[i][hashKey].Add(In.uniqueId);
+                }
+                else
+                {
+                    _hashes[i].Add(hashKey, new List<long>());
+                    _hashes[i][hashKey].Add(In.uniqueId);
+                }
+            }
+        }
+
+        private void RemoveIndex(IVector In)
+        {
+            for (int i = 0; i < _dimension; i++)
+            {
+                var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i].Value) : -10 * Math.Log10(-1 * In.coordinate[i].Value);
+
+                if (_hashes[i].ContainsKey(hashKey))
+                {
+                    if (_hashes[i][hashKey].Contains(In.uniqueId))
+                    {
+                        _hashes[i][hashKey].Remove(In.uniqueId);
+                        if (_hashes[i][hashKey].Count == 0)
+                        {
+                            _hashes[i].Remove(hashKey);
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool RemoveVector(IVector In, out List<long> uniqueIds)
+        {
+            bool ret = false;
+            var angles = GenerateAngles(In);
+            var distanceOrgin = Distance(In.coordinate, CreateDefault(In.coordinate.Length));
+            distanceOrgin = Math.Truncate(distanceOrgin / 10);
+            var angle = Math.Truncate(angles[0]);
+            bool uniqueIdCheck = In.uniqueId != default(long);
+            bool Removeflag = false;
+
+            uniqueIds = new List<long>();
+            if (_hashedCollection.ContainsKey(angle))
+            {
+                var hashedDistances = _hashedCollection[angle];
+                int i = 0;
+
+                while (i < hashedDistances.Count)
+                {
+                    var _hashedDistanceOrgin = hashedDistances.ElementAt(i).Key;
+                    if (_hashedDistanceOrgin == distanceOrgin)
+                    {
+                        int j = 0;
+                        var _vectorNodeList = hashedDistances.ElementAt(i).Value;
+                        while (j < _vectorNodeList.Count)
+                        {
+                            var vnode = _vectorNodeList[j];
+                            if (uniqueIdCheck)
+                            {
+                                Removeflag = In.uniqueId == vnode._uniqueID;
+                            }
+                            else
+                            {
+                                var vnodeObj = _hashedDictionary[vnode._uniqueID];
+                                Removeflag = Distance(In.coordinate, vnodeObj.coordinate) == 0;
+                            }
+                                                        
+                            if (Removeflag)
+                            {
+                                Mu -= vnode._anglePlain[0];
+                                N--;
+                                //remove node.
+                                _vectorNodeList.RemoveAt(j);
+                                uniqueIds.Add(vnode._uniqueID);
+                                ret = true;
+                                if (uniqueIdCheck)
+                                    break;
+                                j--;
+                            }
+                            j++;
+                        }
+
+                        if (hashedDistances[_hashedDistanceOrgin] == null || hashedDistances[_hashedDistanceOrgin].Count == 0)
+                        {
+                            //No nodes empty dictionary so remove the key from parent.
+                            hashedDistances.Remove(_hashedDistanceOrgin);
+                            i--;
+                        }
+
+                        if (Removeflag)
+                            break;
+                    }
+                    i++;
+                }
+                if (_hashedCollection[angle] == null || _hashedCollection[angle].Count == 0)
+                {
+                    //No nodes empty dictionary so remove the key from parent.
+                    _hashedCollection.Remove(angle);
+                }
+            }
+            return ret;
         }
 
         private double[] GenerateAngles(IVector vector)
