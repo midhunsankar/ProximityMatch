@@ -3,27 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ProximityMatch.Exceptions
+namespace OctagonSquare.ProximityMatch.Exceptions
 {
-    public class DimensionExceptions : System.Exception
+    public class DimensionException : System.Exception
     {
-        public DimensionExceptions(string message)
+        public DimensionException(string message)
             : base(message: message)
         {
         }
     }
 
-    public class UniqueIdExceptions : System.Exception
+    public class UniqueIdException : System.Exception
     {
-        public UniqueIdExceptions(string message)
+        public UniqueIdException(string message)
             : base(message: message)
         {
         }
     }
 
-    public class CoordinateExceptions : System.Exception
+    public class CoordinateException : System.Exception
     {
-        public CoordinateExceptions(string message)
+        public CoordinateException(string message)
             : base(message: message)
         {
         }

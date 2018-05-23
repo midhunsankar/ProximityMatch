@@ -11,12 +11,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProximityMatch
+namespace OctagonSquare.ProximityMatch
 {
     public interface IVector
     {
-        long uniqueId { get; set; }
-        double?[] coordinate { get; set; }
-        double _distance { get; set; }
+        long UniqueId { get; set; }
+        double?[] Coordinate { get; set; }
+        double Distance { get; set; }
     }
 }

@@ -10,32 +10,34 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ProximityMatch.Exceptions;
-using ProximityMatch.Enums;
+using OctagonSquare.ProximityMatch.Exceptions;
 
-namespace ProximityMatch
+
+namespace OctagonSquare.ProximityMatch
 {
     public delegate void FinishedEventHandler(object sender, ProximityMatchEventArgs e);
 
     public class Vector
     {
-        public int? take { get; set; }
-        public Orderby orderby { get; set; }
-        protected readonly int _dimension;
-        protected int _distance;
-        protected int _spread;
+        public int? Take { get; set; }
+        public ProximityMatch.Enums.OrderBy OrderBy { get; set; }
+        
+        protected readonly int Dimension;
+        protected int Distance;
+        protected int Spread;
 
-        protected readonly IDictionary<double, IDictionary<double, List<VectorNode>>> _hashedCollection;
-        protected readonly IDictionary<long, IVector> _hashedDictionary;
-        protected IDictionary<double, List<long>>[] _hashes;
+        protected readonly IDictionary<double, IDictionary<double, List<VectorNode>>> VectorDictionary;
+        protected readonly IDictionary<long, IVector> ItemDictionary;
+        protected IDictionary<double, List<long>>[] HashDictionary;
 
-        public event FinishedEventHandler FinishedPloting;
-        public event FinishedEventHandler FinishedRemove;
+        public event FinishedEventHandler PlotingFinished;
+        public event FinishedEventHandler RemoveFinished;
 
-        private double Mu = 0, N = 0;
-        private double _mean { get { return Mu / N; } }
-        private Random _rand;
-
+        private double mu = 0; // The summation of data points.
+        private double n = 0; // Number of data points. 
+        private double mean { get { return mu / n; } } // The mean of data points.
+        private Random random;
+        private long uniqueidOut;
 
         public Vector(
             int dimension = 3,
@@ -43,273 +45,328 @@ namespace ProximityMatch
             int spread = 0
             )
         {
-            _dimension = dimension;
+            this.Dimension = dimension;
+            this.VectorDictionary = new Dictionary<double, IDictionary<double, List<VectorNode>>>();
+            this.ItemDictionary = new Dictionary<long, IVector>();
+            this.HashDictionary = new Dictionary<double, List<long>>[dimension];
+            this.OrderBy = ProximityMatch.Enums.OrderBy.Asc;
 
-            _hashedCollection = new Dictionary<double, IDictionary<double, List<VectorNode>>>();
-            _hashedDictionary = new Dictionary<long, IVector>();
-            _hashes = new Dictionary<double, List<long>>[dimension];
-            orderby = Orderby.Asc;
+            random = new Random();
 
-            _rand = new Random();
-
-            SetDistance(distance);
-            SetSpread(spread);
+            SetProximityDistance(distance);
+            SetProximitySpread(spread);
         }
 
-        public void Plot(IVector vector)
+        /// <summary>
+        /// Plot vector nodes to the Eucledian plain.
+        /// </summary>
+        /// <param name="vector">A vector Node/Coordinate.</param>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.DimensionException">Thrown when invalid number of dimensions.</exception>  
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.UniqueIdException">Thrown when uniqueId is exists.</exception>
+        public void Plot(IVector vector, out long uniqueid)
         {
-            if (_dimension != vector.coordinate.Length)
+            try
             {
-                throw new DimensionExceptions("dimension invalid!!");
-            }
-
-            if (_dimension < 2)
-            {
-                throw new DimensionExceptions("Atleast two dimensions are required!!");
-            }
-
-            if (!vector.coordinate.All(x => x.HasValue))
-            {
-                throw new CoordinateExceptions("Missing coordinate.");
-            }
-
-            if (vector.uniqueId == 0)
-            {
-                vector.uniqueId = Unique();
-            }
-
-            var vnode = new VectorNode(
-                    uniqueid: vector.uniqueId,
-                    angle: GenerateAngles(vector),
-                    distance: Distance(vector.coordinate, CreateDefault(vector.coordinate.Length))
-                );
-
-            var angle = Math.Truncate(vnode._anglePlain[0]);
-            var _distanceOrgin = Math.Truncate(vnode._distanceOrgin / 10);
-            Mu += angle;
-            N++;
-
-            if (_hashedCollection.ContainsKey(angle))
-            {
-                if (_hashedCollection[angle].ContainsKey(_distanceOrgin))
+                if (this.Dimension != vector.Coordinate.Length)
                 {
-                    _hashedCollection[angle][_distanceOrgin].Add(vnode);
-                    _hashedDictionary.Add(vnode._uniqueID, vector);
+                    throw new DimensionException("Invalid dimension!!.");
+                }
+
+                if (this.Dimension < 2)
+                {
+                    throw new DimensionException("Atleast two dimensions are required!!.");
+                }
+
+                if (!vector.Coordinate.All(x => x.HasValue))
+                {
+                    throw new CoordinateException("Missing coordinate.");
+                }
+
+                if (vector.UniqueId <= 0)
+                {
+                    vector.UniqueId = GenerateUniqueId();
+                }
+
+                //All good, try create a vector node/coordinate now.
+
+                if (this.ItemDictionary.ContainsKey(vector.UniqueId))
+                {
+                    throw new UniqueIdException("UniqueId already exist!!.");
+                }
+
+                this.ItemDictionary.Add(vector.UniqueId, vector.Copy<IVector>());
+                uniqueid = vector.UniqueId;
+
+                var vectorNode = new VectorNode(
+                        uniqueid: vector.UniqueId,
+                        angles: GenerateAngles(vector),
+                        distance: EuclideanDistance(vector.Coordinate, CreateDouble(vector.Coordinate.Length))
+                    );
+
+                //Indexing vectors based on cos(beta) angle and Euclidean distance from orgin. 
+                var angleKey = Math.Truncate(vectorNode.Angles[0]);
+                var distanceFromOrginKey = Math.Truncate(vectorNode.DistanceFromOrgin / 10);
+
+                if (this.VectorDictionary.ContainsKey(angleKey))
+                {
+                    if (this.VectorDictionary[angleKey].ContainsKey(distanceFromOrginKey))
+                    {
+                        this.VectorDictionary[angleKey][distanceFromOrginKey].Add(vectorNode);
+                    }
+                    else
+                    {
+                        this.VectorDictionary[angleKey].Add(distanceFromOrginKey, new List<VectorNode> { vectorNode });
+                    }
                 }
                 else
                 {
-                    _hashedCollection[angle].Add(_distanceOrgin, new List<VectorNode> { vnode });
-                    _hashedDictionary.Add(vnode._uniqueID, vector);
+                    var distanceFromOrginDictionary = new Dictionary<double, List<VectorNode>>();
+                    distanceFromOrginDictionary.Add(distanceFromOrginKey, new List<VectorNode>() { vectorNode });
+                    this.VectorDictionary.Add(angleKey, distanceFromOrginDictionary);
                 }
-            }
-            else
-            {
-                var LinkedL = new Dictionary<double, List<VectorNode>>();
 
-                LinkedL.Add(_distanceOrgin, new List<VectorNode>() { vnode });
-                _hashedCollection.Add(angle, LinkedL);
-                _hashedDictionary.Add(vnode._uniqueID, vector);
+                //Build indexes.
+                AddIndex(vector);
+
+                mu += angleKey;
+                n++;
+
+                //Ploting done!! now fire the finished event. 
+                PlotingFinishedEvent(new PlotEventArgs(vectorNode));
             }
-            //SetCoordinateStat(vector.coordinate);
-            AddIndex(vector);
-            EventFinishedPloting(new PlotEventArgs(vnode));
+            catch (Exception exception)
+            {                
+                throw exception;
+            }
         }
 
+        /// <summary>
+        /// Pass an array of vector nodes for plotting.
+        /// </summary>
+        /// <param name="vectorList">A list of vector Node/Coordinate.</param>
+        /// <exception cref="System.ArgumentNullException">Thrown when list is null or empty.</exception>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.DimensionException">Thrown when invalid number of dimensions.</exception>  
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
         public void Plot(IList<IVector> vectorList)
         {
-            if (vectorList == null)
+            if (vectorList == null || vectorList.Count == 0)
             {
                 throw new ArgumentNullException();
             }
-
             foreach (var vector in vectorList)
             {
-                Plot(vector: vector);
-            }
-        }
-
-        public IList<IVector> Nearest(IVector In)
-        {
-           
-            if (!In.coordinate.All(x => x.HasValue))
-            {
-                throw new CoordinateExceptions("Missing coordinate.");
-            }
-
-            var candidates = new List<IVector>();
-            foreach (var c in Nearest_Func(In: In))
-            {
-                candidates.Add(c);
-            }
-            if (take.HasValue)
-                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
-            else
-                return candidates.OrderBy(x => x._distance).ToList();
-        }
-
-        public IList<IVector> Nearest(IVector In, Func<IVector, bool> _where, Func<IVector,double> _orderby = null)
-        {
-            if (!In.coordinate.All(x => x.HasValue))
-            {
-                throw new CoordinateExceptions("Missing coordinate.");
-            }
-
-            var candidates = new List<IVector>();
-            foreach (var c in Nearest_Func(In: In))
-            {
-                if(_where(c))
-                    candidates.Add(c);
-            }
-            if (_orderby == null)
-            {
-                candidates = candidates.OrderBy(x => x._distance).ToList();
-            }
-            else
-            {
-                if (orderby == Orderby.Asc)
+                try
                 {
-                    candidates = candidates.OrderBy(_orderby).ToList();
+                    Plot(vector: vector, uniqueid: out uniqueidOut);
                 }
-                else if (orderby == Orderby.Desc)
+                catch (Exception exception)
                 {
-                    candidates = candidates.OrderByDescending(_orderby).ToList();
+                    throw exception;
+                }                
+            }
+        }
+
+        /// <summary>
+        /// Find the nearest vector coordinates.
+        /// </summary>
+        /// <typeparam name="T">Classes that implements IVector interface.</typeparam>
+        /// <param name="In">Input vector.</param>
+        /// <returns>A collection of nearest vectors.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.UniqueIdException">Thrown when uniqueId exists.</exception>
+        public IList<T> Nearest<T>(IVector In) where T : IVector 
+        {           
+            if (!In.Coordinate.All(x => x.HasValue))
+            {
+                throw new CoordinateException("Missing coordinate.");
+            }
+
+            var candidates = new List<T>();
+            foreach (T vector in FindOutNearestMatches(In: In))
+            {
+                candidates.Add(vector);
+            }
+            if (Take.HasValue)
+                return candidates.OrderBy(x => x.Distance).Take(Take.Value).ToList();
+            else
+                return candidates.OrderBy(x => x.Distance).ToList();
+        }
+
+        /// <summary>
+        /// Find the nearest vector coordinates.
+        /// </summary>
+        /// <typeparam name="T">Classes that implements IVector interface.</typeparam>
+        /// <param name="In">Input vector.</param>
+        /// <param name="where">Pass a boolean expression.</param>
+        /// <param name="orderby">Pass an orderby expression.</param>
+        /// <returns>A collection of nearest vectors.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
+        public IList<T> Nearest<T>(IVector In, Func<T, bool> where, Func<T, double> orderby = null) where T : IVector
+        {
+            if (!In.Coordinate.All(x => x.HasValue))
+            {
+                throw new CoordinateException("Missing coordinate.");
+            }
+
+            var candidates = new List<T>();
+            foreach (T vector in FindOutNearestMatches(In: In))
+            {
+                if(where(vector))
+                    candidates.Add(vector);
+            }
+            if (orderby == null)
+            {
+                candidates = candidates.OrderBy(x => x.Distance).ToList();
+            }
+            else
+            {
+                if (this.OrderBy == ProximityMatch.Enums.OrderBy.Asc)
+                {
+                    candidates = candidates.OrderBy(orderby).ToList();
+                }
+                else if (this.OrderBy == ProximityMatch.Enums.OrderBy.Desc)
+                {
+                    candidates = candidates.OrderByDescending(orderby).ToList();
                 }
                 else
                 {
-                    candidates = candidates.OrderBy(x => x._distance).ToList();
+                    candidates = candidates.OrderBy(x => x.Distance).ToList();
                 }
             }
 
-            if (take.HasValue)
-                return candidates.Take(take.Value).ToList();
+            if (Take.HasValue)
+                return candidates.Take(Take.Value).ToList();
             else
                 return candidates;
         }
 
+        /// <summary>
+        /// Find the nearest vector coordinates.
+        /// </summary>
+        /// <remarks>This method is slow on big dataset, since it has to perform a full scan.</remarks>
+        /// <param name="In">Input vector.</param>
+        /// <returns>A collection of nearest vectors.</returns>
         public IList<IVector> NearestFullScan(IVector In)
         {
             List<IVector> candidates = new List<IVector>();
             foreach (var vector in GetAll())
             {
-                vector._distance = Distance(In.coordinate, vector.coordinate);
-                if (vector._distance < GetDistance())
+                vector.Distance = EuclideanDistance(In.Coordinate, vector.Coordinate);
+                if (vector.Distance < GetProximityDistance())
                 {
-                    if (vector.uniqueId != In.uniqueId)
+                    if (vector.UniqueId != In.UniqueId)
                         candidates.Add(vector);
                 }
             }
-            if (take.HasValue)
-                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+            if (Take.HasValue)
+                return candidates.OrderBy(x => x.Distance).Take(Take.Value).ToList();
             else
-                return candidates.OrderBy(x => x._distance).ToList();
-        }
+                return candidates.OrderBy(x => x.Distance).ToList();
+        }       
 
-        //public IList<IVector> NearestRangeScan(IVector In, double[] range)
-        //{
-        //    List<IVector> candidates = new List<IVector>();
-        //    bool add;
-        //    foreach (var vector in GetAll())
-        //    {
-        //        add = true;
-        //        for (int i = 0; i < range.Count(); i++)
-        //        {
-        //            if (!InRange(In.coordinate[i], vector.coordinate[i], range[i]))
-        //            {
-        //                add = false;
-        //                break;
-        //            }
-        //        }
-        //        if (add)
-        //        {
-        //            if (vector.uniqueId != In.uniqueId)
-        //                candidates.Add(vector);
-        //        }
-        //    }
-        //    if (take.HasValue)
-        //        return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
-        //    else
-        //        return candidates.OrderBy(x => x._distance).ToList();
-        //}
-
-        public IList<IVector> Exact(IVector In)
+        /// <summary>
+        /// Find the vectors which share same coordinate with the input vector.
+        /// </summary>
+        /// <typeparam name="T">Classes that implements IVector interface.</typeparam>
+        /// <param name="In">Input vector.</param>
+        /// <returns>A collection of vectors.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
+        public IList<T> Exact<T>(IVector In) where T : IVector
         {
-            if (!In.coordinate.All(x => x.HasValue))
+            if (!In.Coordinate.All(x => x.HasValue))
             {
-                throw new CoordinateExceptions("Missing coordinate.");
+                throw new CoordinateException("Missing coordinate.");
             }
 
-            var candidates = new List<IVector>();
-            foreach (var c in Exact_Func(In: In))
+            var candidates = new List<T>();
+            foreach (T vector in FindOutExactMatches(In: In))
             {
-                candidates.Add(c);
+                candidates.Add(vector);
             }
-            if (take.HasValue)
-                return candidates.OrderBy(x => x._distance).Take(take.Value).ToList();
+            if (Take.HasValue)
+                return candidates.OrderBy(x => x.Distance).Take(Take.Value).ToList();
             else
-                return candidates.OrderBy(x => x._distance).ToList();
+                return candidates.OrderBy(x => x.Distance).ToList();
         }
-
-        public IList<IVector> Exact(IVector In, Func<IVector, bool> _where, Func<IVector, double> _orderby = null)
+        
+        /// <summary>
+        /// Find the vectors which share same coordinate with the input vector.
+        /// </summary>
+        /// <typeparam name="T">Classes that implements IVector interface.</typeparam>
+        /// <param name="In">Input vector.</param>
+        /// <param name="where">Pass a boolean expression.</param>
+        /// <param name="orderby">Pass an orderby expression.</param>
+        /// <returns>A collection of vectors.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
+        public IList<T> Exact<T>(IVector In, Func<T, bool> where, Func<T, double> orderby = null) where T : IVector
         {
-            if (!In.coordinate.All(x => x.HasValue))
+            if (!In.Coordinate.All(x => x.HasValue))
             {
-                throw new CoordinateExceptions("Missing coordinate.");
+                throw new CoordinateException("Missing coordinate.");
             }
 
-            var candidates = new List<IVector>();
-            foreach (var c in Exact_Func(In: In))
+            var candidates = new List<T>();
+            foreach (T vector in FindOutExactMatches(In: In))
             {
-                if(_where(c))
-                    candidates.Add(c);
+                if(where(vector))
+                    candidates.Add(vector);
             }
-            if (_orderby == null)
+            if (orderby == null)
             {
-                candidates = candidates.OrderBy(x => x._distance).ToList();
+                candidates = candidates.OrderBy(x => x.Distance).ToList();
             }
             else
             {
-                if (orderby == Orderby.Asc)
+                if (this.OrderBy == ProximityMatch.Enums.OrderBy.Asc)
                 {
-                    candidates = candidates.OrderBy(_orderby).ToList();
+                    candidates = candidates.OrderBy(orderby).ToList();
                 }
-                else if (orderby == Orderby.Desc)
+                else if (this.OrderBy == ProximityMatch.Enums.OrderBy.Desc)
                 {
-                    candidates = candidates.OrderByDescending(_orderby).ToList();
+                    candidates = candidates.OrderByDescending(orderby).ToList();
                 }
                 else
                 {
-                    candidates = candidates.OrderBy(x => x._distance).ToList();
+                    candidates = candidates.OrderBy(x => x.Distance).ToList();
                 }
             }
 
-            if (take.HasValue)
-                return candidates.Take(take.Value).ToList();
+            if (Take.HasValue)
+                return candidates.Take(Take.Value).ToList();
             else
                 return candidates;
         }
 
-        public IVector Find(long uniqueId)
+        /// <summary>
+        /// Find the vectors based on the input vector's coordinates.
+        /// </summary>
+        /// <remarks>A Index based search is performed, atleast one coordinate value is required.</remarks>
+        /// <typeparam name="T">Classes that implements IVector interface.</typeparam>
+        /// <param name="In">Input vector.</param>
+        /// <returns>A collection of vectors.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
+        public IList<T> Find<T>(IVector In) where T : IVector
         {
-            if (_hashedDictionary.ContainsKey(uniqueId))
-                return _hashedDictionary[uniqueId];
-            return null;
-        }
-
-        public IList<IVector> Find(IVector In)
-        {
-            IList<IVector> candidates = new List<IVector>();
-            IList<long> uniqueKeys = new List<long>();            
-            foreach (var u in Find_Func(In: In))
+            if (!CheckAtleastOneCoordinateExist(In.Coordinate))
             {
-                foreach (var v in u)
+                throw new CoordinateException("Set atleast one coordinate.");
+            }
+
+            IList<T> candidates = new List<T>();
+            IList<long> processedKeys = new List<long>();            
+            foreach (var uniqueIdList in IndexedSearch(In: In))
+            {
+                foreach (var uniqueId in uniqueIdList)
                 {
-                    if(!uniqueKeys.Contains(v))
+                    if(!processedKeys.Contains(uniqueId))
                     {
-                        var _vObj = _hashedDictionary[v];
-                        if(InRange(In.coordinate, _vObj.coordinate))
-                        {
-                            uniqueKeys.Add(v);
-                            candidates.Add(_vObj);
+                        T vector = (T)this.ItemDictionary[uniqueId];
+                        processedKeys.Add(uniqueId);
+
+                        if(CheckWithInRange(In.Coordinate, vector.Coordinate))
+                        {                            
+                            candidates.Add(vector);
                         }                            
                     }
                  }
@@ -317,13 +374,28 @@ namespace ProximityMatch
             return candidates;
         }
 
-        public IList<IVector> Find(IVector In, Func<IVector, bool> _where, Func<IVector, double> _orderby = null)
+        /// <summary>
+        /// Find the vectors based on the input vector's coordinates.
+        /// </summary>
+        /// <remarks>A Index based search is performed, atleast one coordinate value is required.</remarks>
+        /// <typeparam name="T">Classes that implements IVector interface.</typeparam>
+        /// <param name="In">Input vector.</param>
+        /// <param name="where">Pass a boolean expression.</param>
+        /// <param name="orderby">Pass an orderby expression.</param>
+        /// <returns>A collection of vectors.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
+        public IList<T> Find<T>(IVector In, Func<T, bool> where, Func<T, double> orderby = null) where T : IVector
         {
-            IList<IVector> candidates = new List<IVector>();
-            IList<long> uniqueKeys = new List<long>();
+            if (!CheckAtleastOneCoordinateExist(In.Coordinate))
+            {
+                throw new CoordinateException("Set atleast one coordinate.");
+            }
+
+            IList<T> candidates = new List<T>();
+            IList<long> processedKeys = new List<long>();
             bool fullscan = true;
 
-            foreach(var c in In.coordinate)
+            foreach(var c in In.Coordinate)
             {
                 if(c != default(double?))
                 {
@@ -334,181 +406,245 @@ namespace ProximityMatch
 
             if (fullscan)
             {
-                foreach (var _vObj in GetAll())
+                foreach (T _vObj in GetAll())
                 {
-                    if (_where(_vObj))
+                    if (where(_vObj))
                         candidates.Add(_vObj);
                 }
             }
             else
             {
-                foreach (var u in Find_Func(In: In))
+                foreach (var uniqueIdList in IndexedSearch(In: In))
                 {
-                    foreach (var v in u)
+                    foreach (var uniqueId in uniqueIdList)
                     {
-                        if (!uniqueKeys.Contains(v))
+                        if (!processedKeys.Contains(uniqueId))
                         {
-                            var _vObj = _hashedDictionary[v];
-                            if (InRange(In.coordinate, _vObj.coordinate))
+                            T vector = (T)this.ItemDictionary[uniqueId];
+                            processedKeys.Add(uniqueId);
+
+                            if (CheckWithInRange(In.Coordinate, vector.Coordinate))
                             {
-                                uniqueKeys.Add(v);
-                                if (_where(_vObj))
-                                    candidates.Add(_vObj);
+                                if (where(vector))
+                                    candidates.Add(vector);
                             }
                         }
                     }
                 }
             }
 
-            if (_orderby == null)
+            if (orderby == null)
             {
-                candidates = candidates.OrderBy(x => x._distance).ToList();
+                candidates = candidates.OrderBy(x => x.Distance).ToList();
             }
             else
             {
-                if (orderby == Orderby.Asc)
+                if (this.OrderBy == ProximityMatch.Enums.OrderBy.Asc)
                 {
-                    candidates = candidates.OrderBy(_orderby).ToList();
+                    candidates = candidates.OrderBy(orderby).ToList();
                 }
-                else if (orderby == Orderby.Desc)
+                else if (this.OrderBy == ProximityMatch.Enums.OrderBy.Desc)
                 {
-                    candidates = candidates.OrderByDescending(_orderby).ToList();
+                    candidates = candidates.OrderByDescending(orderby).ToList();
                 }
                 else
                 {
-                    candidates = candidates.OrderBy(x => x._distance).ToList();
+                    candidates = candidates.OrderBy(x => x.Distance).ToList();
                 }
             }
 
-            if (take.HasValue)
-                return candidates.Take(take.Value).ToList();
+            if (Take.HasValue)
+                return candidates.Take(Take.Value).ToList();
             else
                 return candidates;
         }
 
-        public IList<IVector> GetAll()
-        {
-            return _hashedDictionary.Values.ToList();
+        /// <summary>
+        /// Get the vector by it's uniqueid.
+        /// </summary>
+        /// <remarks>Performs a hashed index search, Instant!!.</remarks>
+        /// <param name="uniqueId">Input uniqueid.</param>
+        /// <returns>A vector.</returns>
+        public IVector Get(long uniqueId)
+        {            
+            if (this.ItemDictionary.ContainsKey(uniqueId))
+                return (IVector)(this.ItemDictionary[uniqueId]).Copy();
+            return null;
         }
 
-        public bool Remove(IVector In)
+        /// <summary>
+        /// Get all vectors ploted.
+        /// </summary>
+        /// <returns>All vectors.</returns>
+        public IList<IVector> GetAll()
         {
+            return this.ItemDictionary.Values.ToList();
+        }
+
+        /// <summary>
+        /// Remove vectors based on input vector.
+        /// </summary>
+        /// <remarks>if uniqueid is available remove specific vector, else remove all vectors that share same coordinate.</remarks>
+        /// <param name="In"></param>
+        /// <returns>Return true if success.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.CoordinateException">Thrown when coordinates are missing.</exception>
+        public bool RemoveAll(IVector In)
+        {
+            if (!In.Coordinate.All(x => x.HasValue))
+            {
+                throw new CoordinateException("Missing coordinate.");
+            }
+
             List<long> uniqueIds;
             if (RemoveVector(In: In, uniqueIds: out uniqueIds))
             {
                 foreach (var uniq in uniqueIds)
                 {
-                    RemoveIndex(_hashedDictionary[uniq]);
-                    _hashedDictionary.Remove(uniq);
-                    EventFinishedRemove(new RemoveEventArgs(uniq, true));
+                    RemoveIndex(this.ItemDictionary[uniq]);
+                    this.ItemDictionary.Remove(uniq);
+                    RemoveFinishedEvent(new RemoveEventArgs(uniq, true));
                 }
                 return true;
             }            
             return false;
         }
 
+        /// <summary>
+        /// Remove vectors based on input vector.
+        /// </summary>
+        /// <param name="uniqueId">Vector uniqueid.</param>
+        /// <returns>Return true if success.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.UniqueIdException">Thrown when uniqueId is missing.</exception>
         public bool Remove(long uniqueId)
         {
-            if (!_hashedDictionary.ContainsKey(uniqueId))
+            if (!this.ItemDictionary.ContainsKey(uniqueId))
             {
-                throw new UniqueIdExceptions("UniqueId not found!!");
+                throw new UniqueIdException("UniqueId not found!!");
             }
             List<long> uniqueIds;
-            IVector In = _hashedDictionary[uniqueId];
+            IVector In = this.ItemDictionary[uniqueId];
             if (RemoveVector(In: In, uniqueIds: out uniqueIds))
             {
                 foreach (var uniq in uniqueIds)
                 {
-                    RemoveIndex(_hashedDictionary[uniq]);
-                    _hashedDictionary.Remove(uniq);
-                    EventFinishedRemove(new RemoveEventArgs(uniq, true));
+                    RemoveIndex(this.ItemDictionary[uniq]);
+                    this.ItemDictionary.Remove(uniq);
+                    RemoveFinishedEvent(new RemoveEventArgs(uniq, true));
                 }
                 return true;
             }
             return false;
         }
 
-        public bool Update(IVector Old, IVector New)
+        /// <summary>
+        /// Update the vector.
+        /// </summary>
+        /// <param name="In">Input vector.</param>
+        /// <returns>Return true if success.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.UniqueIdException">Thrown when uniqueId is missing.</exception>
+        public bool Update(IVector In)
         {
-            if (New.uniqueId == 0)
+            if (In.UniqueId <= 0)
             {
-                throw new UniqueIdExceptions("UniqueId not set!!");
+                throw new UniqueIdException("UniqueId not set!!");
             }
-            else if (Old.uniqueId != New.uniqueId)
+            else if (!ItemDictionary.ContainsKey(In.UniqueId))
             {
-                throw new UniqueIdExceptions("UniqueId should be same!!");
+                throw new UniqueIdException("UniqueId not found!!");
             }
             else
             {
-
-                if (Remove(Old))
+                var vectorOld = this.Get(In.UniqueId);
+                if (Remove(vectorOld.UniqueId))
                 {
-                    Plot(New);
+                    Plot(vector: In, uniqueid: out uniqueidOut);
                     return true;
                 }
             }
             return false;
         }
 
-        public bool Update(long uniqueId, IVector New)
+        /// <summary>
+        /// Replace a vector with new one.
+        /// </summary>
+        /// <param name="uniqueId">Old vector uniqueid.</param>
+        /// <param name="In">Updated vector.</param>
+        /// <returns>Return true if success.</returns>
+        /// <exception cref="OctagonSquare.ProximityMatch.Exceptions.UniqueIdException">Thrown when uniqueId is missing.</exception>
+        public bool Replace(long uniqueId, IVector In)
         {
-            if (New.uniqueId == 0)
+            if (In.UniqueId <= 0)
             {
-                throw new UniqueIdExceptions("UniqueId not set!!");
+                throw new UniqueIdException("Input uniqueId not set!!");
             }
-            else if (uniqueId != New.uniqueId)
+            else if (In.UniqueId <= 0)
             {
-                throw new UniqueIdExceptions("UniqueId should be same!!");
+                throw new UniqueIdException("Input vector uniqueId not set!!");
             }
             else
             {
                 if (Remove(uniqueId))
                 {
-                    Plot(New);
+                    if (ItemDictionary.ContainsKey(In.UniqueId))
+                    {
+                        Remove(In.UniqueId);
+                    }
+                    Plot(vector: In, uniqueid: out uniqueidOut);
                     return true;
                 }
             }
             return false;
         }
 
-        public virtual void SetDistance(int distance)
+        /// <summary>
+        /// Default value is 5 units, change it to expand or narrow the area. 
+        /// </summary>
+        /// <remarks>A positive value is expected.</remarks>
+        /// <param name="distance"></param>
+        public virtual void SetProximityDistance(int distance)
         {
-            _distance = distance;
+            if(distance > 0)
+                this.Distance = distance;
         }
 
-        public virtual void SetSpread(int spread)
+        /// <summary>
+        /// By default standard deviation is applied, change it to wide or narrow the spread.
+        /// </summary>
+        /// <param name="spread"></param>
+        public virtual void SetProximitySpread(int spread)
         {
-            _spread = spread;
+            if(spread > 0)
+                this.Spread = spread;
         }
 
 
         #region private_functions
 
-        private IEnumerable<IVector> Nearest_Func(IVector In)
+        private IEnumerable<IVector> FindOutNearestMatches(IVector In)
         {
             var angles = GenerateAngles(In);
-            var distanceOrgin = Distance(In.coordinate, CreateDefault(In.coordinate.Length));
+            var distanceOrgin = EuclideanDistance(In.Coordinate, CreateDouble(In.Coordinate.Length));
             distanceOrgin = Math.Truncate(distanceOrgin / 10);
             //List<IVector> candidates = new List<IVector>();
-            var sdAngle = StdDev_Angle();
+            var sdAngle = CalculateAngleSpread();
             double _distance;
             var angle = Math.Truncate(angles[0]);
-            foreach (var hashedAngles in _hashedCollection)
+            foreach (var hashedAngles in this.VectorDictionary)
             {
-                if (InRange(angle, hashedAngles.Key, sdAngle))
+                if (CheckWithInRange(angle, hashedAngles.Key, sdAngle))
                 {
                     foreach (var hashedDistance in hashedAngles.Value)
                     {
-                        if (InRange(distanceOrgin, hashedDistance.Key, GetDistance()))
+                        if (CheckWithInRange(distanceOrgin, hashedDistance.Key, GetProximityDistance()))
                         {
                             foreach (var vnode in hashedDistance.Value)
                             {
-                                var _vnodeObj = _hashedDictionary[vnode._uniqueID];
-                                _distance = Distance(In.coordinate, _vnodeObj.coordinate);
-                                if (_distance < GetDistance())
-                                    if (_vnodeObj.uniqueId != In.uniqueId)
+                                var _vnodeObj = this.ItemDictionary[vnode.UniqueId];
+                                _distance = EuclideanDistance(In.Coordinate, _vnodeObj.Coordinate);
+                                if (_distance < GetProximityDistance())
+                                    if (_vnodeObj.UniqueId != In.UniqueId)
                                     {
-                                        _vnodeObj._distance = _distance;
+                                        _vnodeObj.Distance = _distance;
                                         yield return _vnodeObj;
                                     }
                             }
@@ -518,24 +654,24 @@ namespace ProximityMatch
             }
         }
 
-        private IEnumerable<IVector> Exact_Func(IVector In)
+        private IEnumerable<IVector> FindOutExactMatches(IVector In)
         {
             var angles = GenerateAngles(In);
-            var distanceOrgin = Distance(In.coordinate, CreateDefault(In.coordinate.Length));
+            var distanceOrgin = EuclideanDistance(In.Coordinate, CreateDouble(In.Coordinate.Length));
             distanceOrgin = Math.Truncate(distanceOrgin / 10);
             double _distance;
             var angle = Math.Truncate(angles[0]);
-            if (_hashedCollection.ContainsKey(angle))
+            if (this.VectorDictionary.ContainsKey(angle))
             {
-                var hashedAngles = _hashedCollection[angle];
+                var hashedAngles = this.VectorDictionary[angle];
                 foreach (var hashedDistance in hashedAngles.Keys)
                 {
                     if (hashedDistance == distanceOrgin)
                     {
                         foreach (var vnode in hashedAngles[hashedDistance])
                         {
-                            var _vnodeObj = _hashedDictionary[vnode._uniqueID];
-                            _distance = Distance(In.coordinate, _vnodeObj.coordinate);
+                            var _vnodeObj = this.ItemDictionary[vnode.UniqueId];
+                            _distance = EuclideanDistance(In.Coordinate, _vnodeObj.Coordinate);
                             if (_distance == 0)
                               yield return _vnodeObj;
                         }
@@ -544,16 +680,16 @@ namespace ProximityMatch
             }           
         }
 
-        private IEnumerable<IList<long>> Find_Func(IVector In)
+        private IEnumerable<IList<long>> IndexedSearch(IVector In)
         {
-            for (int i = 0; i < _dimension; i++)
+            for (int i = 0; i < this.Dimension; i++)
             {
-                if (In.coordinate[i] != default(double?))
+                if (In.Coordinate[i] != default(double?))
                 {
-                    var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i].Value) : -10 * Math.Log10(-1 * In.coordinate[i].Value);
-                    if (_hashes[i].ContainsKey(hashKey))
+                    var hashKey = (In.Coordinate[i] == 0) ? 0 : In.Coordinate[i] > 0 ? 10 * Math.Log10(In.Coordinate[i].Value) : -10 * Math.Log10(-1 * In.Coordinate[i].Value);
+                    if (this.HashDictionary[i].ContainsKey(hashKey))
                     {
-                        yield return _hashes[i][hashKey]; ;
+                        yield return this.HashDictionary[i][hashKey]; ;
                     }
                 }
             }
@@ -561,38 +697,38 @@ namespace ProximityMatch
 
         private void AddIndex(IVector In)
         {
-            for (int i = 0; i < _dimension; i++)
+            for (int i = 0; i < this.Dimension; i++)
             {
-                var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i].Value) : -10 * Math.Log10(-1 * In.coordinate[i].Value);
-                if (_hashes[i] == null)
-                    _hashes[i] = new Dictionary<double, List<long>>();
+                var hashKey = (In.Coordinate[i] == 0) ? 0 : In.Coordinate[i] > 0 ? 10 * Math.Log10(In.Coordinate[i].Value) : -10 * Math.Log10(-1 * In.Coordinate[i].Value);
+                if (this.HashDictionary[i] == null)
+                    this.HashDictionary[i] = new Dictionary<double, List<long>>();
 
-                if (_hashes[i].ContainsKey(hashKey))
+                if (this.HashDictionary[i].ContainsKey(hashKey))
                 {
-                    _hashes[i][hashKey].Add(In.uniqueId);
+                    this.HashDictionary[i][hashKey].Add(In.UniqueId);
                 }
                 else
                 {
-                    _hashes[i].Add(hashKey, new List<long>());
-                    _hashes[i][hashKey].Add(In.uniqueId);
+                    this.HashDictionary[i].Add(hashKey, new List<long>());
+                    this.HashDictionary[i][hashKey].Add(In.UniqueId);
                 }
             }
         }
 
         private void RemoveIndex(IVector In)
         {
-            for (int i = 0; i < _dimension; i++)
+            for (int i = 0; i < this.Dimension; i++)
             {
-                var hashKey = (In.coordinate[i] == 0) ? 0 : In.coordinate[i] > 0 ? 10 * Math.Log10(In.coordinate[i].Value) : -10 * Math.Log10(-1 * In.coordinate[i].Value);
+                var hashKey = (In.Coordinate[i] == 0) ? 0 : In.Coordinate[i] > 0 ? 10 * Math.Log10(In.Coordinate[i].Value) : -10 * Math.Log10(-1 * In.Coordinate[i].Value);
 
-                if (_hashes[i].ContainsKey(hashKey))
+                if (this.HashDictionary[i].ContainsKey(hashKey))
                 {
-                    if (_hashes[i][hashKey].Contains(In.uniqueId))
+                    if (this.HashDictionary[i][hashKey].Contains(In.UniqueId))
                     {
-                        _hashes[i][hashKey].Remove(In.uniqueId);
-                        if (_hashes[i][hashKey].Count == 0)
+                        this.HashDictionary[i][hashKey].Remove(In.UniqueId);
+                        if (this.HashDictionary[i][hashKey].Count == 0)
                         {
-                            _hashes[i].Remove(hashKey);
+                            this.HashDictionary[i].Remove(hashKey);
                         }
                     }
                 }
@@ -603,16 +739,16 @@ namespace ProximityMatch
         {
             bool ret = false;
             var angles = GenerateAngles(In);
-            var distanceOrgin = Distance(In.coordinate, CreateDefault(In.coordinate.Length));
+            var distanceOrgin = EuclideanDistance(In.Coordinate, CreateDouble(In.Coordinate.Length));
             distanceOrgin = Math.Truncate(distanceOrgin / 10);
             var angle = Math.Truncate(angles[0]);
-            bool uniqueIdCheck = In.uniqueId != default(long);
-            bool Removeflag = false;
+            bool haveUniqueId = In.UniqueId != default(long);
+            bool foundVector = false;
 
             uniqueIds = new List<long>();
-            if (_hashedCollection.ContainsKey(angle))
+            if (this.VectorDictionary.ContainsKey(angle))
             {
-                var hashedDistances = _hashedCollection[angle];
+                var hashedDistances = this.VectorDictionary[angle];
                 int i = 0;
 
                 while (i < hashedDistances.Count)
@@ -625,25 +761,25 @@ namespace ProximityMatch
                         while (j < _vectorNodeList.Count)
                         {
                             var vnode = _vectorNodeList[j];
-                            if (uniqueIdCheck)
+                            if (haveUniqueId)
                             {
-                                Removeflag = In.uniqueId == vnode._uniqueID;
+                                foundVector = In.UniqueId == vnode.UniqueId;
                             }
                             else
                             {
-                                var vnodeObj = _hashedDictionary[vnode._uniqueID];
-                                Removeflag = Distance(In.coordinate, vnodeObj.coordinate) == 0;
+                                var vnodeObj = this.ItemDictionary[vnode.UniqueId];
+                                foundVector = EuclideanDistance(In.Coordinate, vnodeObj.Coordinate) == 0;
                             }
                                                         
-                            if (Removeflag)
+                            if (foundVector)
                             {
-                                Mu -= vnode._anglePlain[0];
-                                N--;
+                                mu -= vnode.Angles[0];
+                                n--;
                                 //remove node.
                                 _vectorNodeList.RemoveAt(j);
-                                uniqueIds.Add(vnode._uniqueID);
+                                uniqueIds.Add(vnode.UniqueId);
                                 ret = true;
-                                if (uniqueIdCheck)
+                                if (haveUniqueId)
                                     break;
                                 j--;
                             }
@@ -657,15 +793,15 @@ namespace ProximityMatch
                             i--;
                         }
 
-                        if (Removeflag)
+                        if (haveUniqueId && foundVector)
                             break;
                     }
                     i++;
                 }
-                if (_hashedCollection[angle] == null || _hashedCollection[angle].Count == 0)
+                if (this.VectorDictionary[angle] == null || this.VectorDictionary[angle].Count == 0)
                 {
                     //No nodes empty dictionary so remove the key from parent.
-                    _hashedCollection.Remove(angle);
+                    this.VectorDictionary.Remove(angle);
                 }
             }
             return ret;
@@ -673,24 +809,23 @@ namespace ProximityMatch
 
         private double[] GenerateAngles(IVector vector)
         {
-            var n = vector.coordinate.Length;
+            var n = vector.Coordinate.Length;
             var angleList = new double[n];
-            var orgin = CreateDefault(n);
+            var orgin = CreateDouble(n);
 
-            var slope = Distance(vector.coordinate, orgin);
+            var slope = EuclideanDistance(vector.Coordinate, orgin);
             for (int i = 0; i < n; i++)
             {
-                var costheta = vector.coordinate[i] / slope;
+                var costheta = vector.Coordinate[i] / slope;
                 var angle = Math.Acos(costheta.Value) * (180 / Math.PI);
                 angleList[i] = Math.Round(angle, 4);
             }
             return angleList;
         }
 
-        private double[] CreateDefault(int size)
+        private double[] CreateDouble(int size)
         {
-            double[] _double = new double[size];
-            return _double;
+            return new double[size];
         }
 
         private int Factorial(int number)
@@ -700,7 +835,7 @@ namespace ProximityMatch
             return number;
         }
 
-        private double Distance(double?[] co1, double?[] co2)
+        private double EuclideanDistance(double?[] co1, double?[] co2)
         {
             /*
                Distance = sqrt( (x2−x1)^2 + (y2−y1)^2 + (z2-z1)^2 )
@@ -715,7 +850,7 @@ namespace ProximityMatch
             return Math.Round(Math.Sqrt(d), 4);
         }
 
-        private double Distance(double?[] co1, double[] co2)
+        private double EuclideanDistance(double?[] co1, double[] co2)
         {
             /*
                Distance = sqrt( (x2−x1)^2 + (y2−y1)^2 + (z2-z1)^2 )
@@ -730,11 +865,11 @@ namespace ProximityMatch
             return Math.Round(Math.Sqrt(d), 4);
         }
 
-        private bool InRange(double?[] c1, double?[] c2, double deviation)
+        private bool CheckWithInRange(double?[] coordinate1, double?[] coordinate2)
         {
-            for (int i = 0; i < c1.Length; i++)
+            for (int i = 0; i < coordinate1.Length; i++)
             {
-                if (!(c2[i] >= (c1[i] - deviation) && c2[i] <= (c1[i] + deviation)))
+                if (coordinate1[i] != default(double?) && coordinate2[i] != coordinate1[i])
                 {
                     return false;
                 }
@@ -742,99 +877,106 @@ namespace ProximityMatch
             return true;
         }
 
-        private bool InRange(double?[] c1, double?[] c2)
+        private bool CheckWithInRange(double coordinate1, double coordinate2, double deviation)
         {
-            for (int i = 0; i < c1.Length; i++)
-            {
-                if (c1[i] != default(double?) && c2[i] != c1[i])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        private bool InRange(double c1, double c2, double deviation)
-        {
-            if (!(c2 >= (c1 - deviation) && c2 <= (c1 + deviation)))
+            if (!(coordinate2 >= (coordinate1 - deviation) && coordinate2 <= (coordinate1 + deviation)))
             {
                 return false;
             }
             return true;
         }
 
-        private double StdDev_Angle()
+        private bool CheckWithInRange(double?[] coordinate1, double?[] coordinate2, double deviation)
         {
-            if (GetSpread() > 0)
+            for (int i = 0; i < coordinate1.Length; i++)
             {
-                return GetSpread();
+                if (!(coordinate2[i] >= (coordinate1[i] - deviation) && coordinate2[i] <= (coordinate1[i] + deviation)))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private double CalculateAngleSpread()
+        {
+            if (GetProximitySpread() > 0)
+            {
+                return GetProximitySpread();
             }
             else
             {
-                var mean = _mean;
                 double sum = 0;
-                sum = _hashedCollection.Sum(x => Math.Pow(x.Key - mean, 2));
+                sum = this.VectorDictionary.Sum(x => Math.Pow(x.Key - mean, 2));
 
                 if (sum == 0) /* standard deviation = 0 is not ideal so atleast 1 degree of check is required. */
                 {
                     return 1;
                 }
-                return Math.Round(Math.Sqrt(sum / (_hashedCollection.Count > 10 ? N : N - 1)), 4);
+                return Math.Round(Math.Sqrt(sum / (this.VectorDictionary.Count > 10 ? n : n - 1)), 4);
             }
         }
 
-        private double StdDev_Distance(ICollection<double> Keys)
+        private long GenerateRandom(long min, long max)
         {
-            var count = Keys.Count();
-            var mean = Keys.Sum() / count;
-            double sum = 0;
-            sum = Keys.Sum(x => Math.Pow(x - mean, 2));
+            byte[] buf = new byte[8];
+            random.NextBytes(buf);
+            long longRand = BitConverter.ToInt64(buf, 0);
 
-            if (sum == 0) /* standard deviation = 0 is not ideal so atleast 1 degree of check is required. */
+            return (Math.Abs(longRand % (max - min)) + min);
+        }
+
+        private bool CheckAtleastOneCoordinateExist(double?[] coordinate)
+        {
+            for (int i = 0; i < coordinate.Length; i++)
             {
-                return GetDistance() / 2;
+                if(coordinate[i].HasValue)
+                    return true;
             }
-            return Math.Round(Math.Sqrt(sum / (count > 10 ? count : count - 1)), 4);
+            return false;
         }
 
         #endregion
 
         #region protected_functions
 
-        protected virtual long Unique()
+        /// <summary>
+        /// Override this function if you want your own implementation.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual long GenerateUniqueId()
         {
-            return LongRandom(0, long.MaxValue);
+            return GenerateRandom(0, long.MaxValue);
+        }
+  
+        protected virtual int GetProximityDistance()
+        {
+            return this.Distance;
         }
 
-        long LongRandom(long min, long max)
+        protected virtual int GetProximitySpread()
         {
-            byte[] buf = new byte[8];
-            _rand.NextBytes(buf);
-            long longRand = BitConverter.ToInt64(buf, 0);
-
-            return (Math.Abs(longRand % (max - min)) + min);
+            return this.Spread;
         }
 
-        protected virtual int GetDistance()
+        /// <summary>
+        /// Event fired after ploting.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void PlotingFinishedEvent(ProximityMatchEventArgs e)
         {
-            return _distance;
+            if (this.PlotingFinished != null)
+                this.PlotingFinished(sender: this, e: e);
         }
 
-        protected virtual int GetSpread()
+        /// <summary>
+        /// Event fired after remove vector.
+        /// </summary>
+        /// <param name="e"></param>
+        protected virtual void RemoveFinishedEvent(ProximityMatchEventArgs e)
         {
-            return _spread;
-        }
-
-        protected virtual void EventFinishedPloting(ProximityMatchEventArgs e)
-        {
-            if (FinishedPloting != null)
-                FinishedPloting(sender: this, e: e);
-        }
-
-        protected virtual void EventFinishedRemove(ProximityMatchEventArgs e)
-        {
-            if (FinishedRemove != null)
-                FinishedRemove(sender: this, e: e);
+            if (this.RemoveFinished != null)
+                this.RemoveFinished(sender: this, e: e);
         }
 
         #endregion

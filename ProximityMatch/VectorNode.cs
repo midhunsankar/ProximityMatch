@@ -11,19 +11,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace ProximityMatch
+namespace OctagonSquare.ProximityMatch
 {
     public sealed class VectorNode
     {
-        public readonly long _uniqueID;
-        public readonly double[] _anglePlain;
-        public readonly double _distanceOrgin;
+        public readonly long UniqueId;
+        public readonly double[] Angles;
+        public readonly double DistanceFromOrgin;
 
-        public VectorNode(long uniqueid, double[] angle, double distance)
+        public VectorNode(long uniqueid, double[] angles, double distance)
         {
-            _anglePlain = angle;
-            _distanceOrgin = distance;
-            _uniqueID = uniqueid;
+            Angles = angles;
+            DistanceFromOrgin = distance;
+            UniqueId = uniqueid;
         }
     }
 }
