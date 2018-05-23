@@ -1,4 +1,4 @@
-﻿using ProximityMatch;
+﻿using OctagonSquare.ProximityMatch;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -29,11 +29,11 @@ namespace ProximityMatchApp
             ConsoleKey Key;
             do
             {
-                foodList.take = 10;
+                foodList.Take = 10;
 
                 /* Find the carrot price during the month of March.*/
                 Console.WriteLine("\n\nFind all carrot (item = 110) price during the month of March.");
-                var results = foodList.Find(new FoodStatistics() { item = 110 }, x => getPeriodItemData(((FoodStatistics)x).period).month == "03", y => ((FoodStatistics)y).period);
+                var results = foodList.Find <FoodStatistics>(new FoodStatistics() { item = 110 }, x => getPeriodItemData((x).period).month == "03", y => (y).period);
                 foreach (FoodStatistics nodes in results)
                 {
                     var itm = getFoodItemData(nodes.item);
@@ -45,7 +45,7 @@ namespace ProximityMatchApp
 
                 /* Find food items whose price atleast greater than 10 once and order them by price.*/
                 Console.WriteLine("\n\nFind food items whose price atleast greater than 10 once and order them by price.");
-                results = foodList.Find(new FoodStatistics(), x => ((FoodStatistics)x).price > 10, y => ((FoodStatistics)y).price);
+                results = foodList.Find<FoodStatistics>(new FoodStatistics() { period = 200803 }, x => (x).price > 10, y => (y).price);
                 foreach (FoodStatistics nodes in results)
                 {
                     var itm = getFoodItemData(nodes.item);
@@ -176,17 +176,17 @@ namespace ProximityMatchApp
 
     public class FoodStatistics : IVector
     {
-        public long uniqueId { get; set; }
+        public long UniqueId { get; set; }
 
         private double?[] coordinateP = new double?[3];
 
-        public double?[] coordinate
+        public double?[] Coordinate
         {
             get { return coordinateP; }
             set { coordinateP = value; }
         }
 
-        public double _distance { get; set; }
+        public double Distance { get; set; }
 
         public int item { get { return coordinateP[0].HasValue ? (int)coordinateP[0].Value : default(int); } set { coordinateP[0] = value; } }
         public int period { get { return coordinateP[1].HasValue ? (int)coordinateP[1].Value : default(int); } set { coordinateP[1] = value; } }

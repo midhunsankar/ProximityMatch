@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using ProximityMatch;
+using OctagonSquare.ProximityMatch;
 using System.Data;
 using System.IO;
 
@@ -15,7 +15,7 @@ namespace ProximityMatchApp
         {           
            var Patients = LoadDataSet(2);
            Vector patientList = new Vector(dimension: 2);
-           patientList.FinishedPloting += FinishedPloting;
+           patientList.PlotingFinished += FinishedPloting;
            patientList.Plot(vectorList: Patients);
 
            ConsoleKey Key;
@@ -33,14 +33,14 @@ namespace ProximityMatchApp
                 System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
                 sw = new System.Diagnostics.Stopwatch();
                 sw.Start();
-                patientList.take = 5;
-                var nodes = patientList.Nearest(patient);
+                patientList.Take = 5;
+                var nodes = patientList.Nearest<Patient>(patient);
                 if (nodes.Count > 0)
                 {
-                    foreach (Patient dat in nodes)
+                    foreach (var dat in nodes)
                     {
                         Console.WriteLine("\nstate = {0} , professional = {1}% , communicated = {2}% coordinate = ({1}, {2}) distance = {3}",
-                              dat.state, dat.professional, dat.communicated, dat._distance);
+                              dat.state, dat.professional, dat.communicated, dat.Distance);
                     }
                 }
                 else
@@ -142,17 +142,17 @@ namespace ProximityMatchApp
 
     public class Patient : IVector
     {
-        public long uniqueId { get; set; }
+        public long UniqueId { get; set; }
 
         private double?[] coordinateP = new double?[2];
 
-        public double?[] coordinate
+        public double?[] Coordinate
         {
             get { return coordinateP; }
             set { coordinateP = value; }
         }
                 
-        public double _distance { get; set; }
+        public double Distance { get; set; }
 
         public string state { get; set; }
 

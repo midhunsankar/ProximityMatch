@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using ProximityMatch;
+using OctagonSquare.ProximityMatch;
 
 namespace ProximityMatchApp
 {
@@ -12,8 +12,9 @@ namespace ProximityMatchApp
         public void Run()
         {
             Vector carList = new Vector(dimension: 5);
-            carList.take = 5;
+            carList.Take = 5;
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            long uniqueOut;
 
             Random rnd = new Random();
             double x, y, z, p = 0, q = 0;
@@ -34,7 +35,7 @@ namespace ProximityMatchApp
                 p = p - p % 1000;
 
                 /* Adding some data to the list. */
-                carList.Plot(new Car() { refno = "car#" + i, xaxis = x, yaxis = y, zaxis = z, paxis = p, qaxis = q });
+                carList.Plot(new Car() { refno = "car#" + i, xaxis = x, yaxis = y, zaxis = z, paxis = p, qaxis = q }, out uniqueOut);
             }
             sw.Stop();
             Console.WriteLine("\nPloting finished!! Time: {0} sec Cycles: {1} ticks", sw.Elapsed.TotalSeconds, sw.Elapsed.Ticks);
@@ -60,11 +61,11 @@ namespace ProximityMatchApp
 
                 sw = new System.Diagnostics.Stopwatch();
                 sw.Start();
-                var nodes = carList.Nearest(car);
-                foreach (Car dat in nodes)
+                var nodes = carList.Nearest<Car>(car);
+                foreach (var dat in nodes)
                 {
                     Console.WriteLine("\nrefno = {0} , odometer = {1} km , year = {2} , price = ${3} , engine = {4} cc, rating = {5} coordinate = ({1}, {2}, {3}, {4}, {5}) distance = {6}",
-                                           dat.refno, dat.xaxis, dat.yaxis, dat.zaxis, dat.paxis, dat.qaxis, dat._distance);
+                                           dat.refno, dat.xaxis, dat.yaxis, dat.zaxis, dat.paxis, dat.qaxis, dat.Distance);
                 }
                 sw.Stop();
 
@@ -77,7 +78,7 @@ namespace ProximityMatchApp
                 foreach (Car dat in nodes2)
                 {
                     Console.WriteLine("\nrefno = {0} , odometer = {1} km , year = {2} , price = ${3} , engine = {4} cc, rating = {5} coordinate = ({1}, {2}, {3}, {4}, {5}) distance = {6}",
-                           dat.refno, dat.xaxis, dat.yaxis, dat.zaxis, dat.paxis, dat.qaxis, dat._distance);
+                           dat.refno, dat.xaxis, dat.yaxis, dat.zaxis, dat.paxis, dat.qaxis, dat.Distance);
                 }
                 sw.Stop();
 
@@ -106,7 +107,7 @@ namespace ProximityMatchApp
     public class Car : IVector
     {
         public string refno { get; set; }
-        public long uniqueId { get; set; }
+        public long UniqueId { get; set; }
         private double xaxisP;
         private double yaxisP;
         private double zaxisP;
@@ -160,9 +161,9 @@ namespace ProximityMatchApp
         }
 
         /* IVector implimentation. */
-        public double _distance { get; set; }
+        public double Distance { get; set; }
         private double?[] coordinateP = new double?[5];
-        public double?[] coordinate { get { return coordinateP; } set { coordinateP = value; } }
+        public double?[] Coordinate { get { return coordinateP; } set { coordinateP = value; } }
 
     }
 }
