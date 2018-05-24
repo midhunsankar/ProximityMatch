@@ -1,12 +1,21 @@
-# Introduction
+# Vector Search project
 
-Source code is released under the MIT license.
+ An alternative way for searching items in a collection against the full scan method. In this method all entities are treated as vectors and their properties/attributes are taken as coordinates of the same.
+ The vectors are ploted/arranged in an vector space (Eucledian plain) the closest the vectors are, they share similar property. In realworld scenarios these vectors can be any entity say a car, person, mobile phone etc, 
+ and their properties can be mark as coordinates in an N dimentional vector space. Lets take an real word scenarion where we have to find five cars which share same or similar specs of a candidate car, or an other scenario would
+ be to show the best range of mobile phones based on an input criterias like price, cpu, memmory etc. In both these scenarios we can populate the result by matching the input candidate with all other etities in the collection,
+ by equating their properies or comparing the properies against a range. This kind of searching approch is called Fullscan search, fullscan is fine if the collection is considerably small, say a 100 - 1000 entities in a collection.
+ But as collection increases the time complexity (timecomplexity = n) of the process will be increased linearly, hence this approch is not ideal in the case of 100K or 5M entity collecion. 
 
-The MIT License (MIT)
-Copyright (c) 2018 Midhun Sankar
+  either comparing  
+   one million cars   
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+### Prerequisites
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+What things you need to install the software and how to install them
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+## Integration
+
+This project is build under .Net Framework 4.0 client profile so it will integrate with projects that are build using .Net framework 4.0 and above.
+This library have no external dependencies so hussile free integration, download the dll from the build folder under the master branch and make a reference to the dll 
+in you project you are good to go.
