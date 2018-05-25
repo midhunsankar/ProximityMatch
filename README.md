@@ -1,14 +1,15 @@
 # Vector Search project
 
- An alternative way for searching items in a collection against the full scan method. In this method all entities are treated as vectors and their properties/attributes are taken as coordinates of the same.
- The vectors are ploted/arranged in an vector space (Eucledian plain) the closest the vectors are, they share similar property. In realworld scenarios these vectors can be any entity say a car, person, mobile phone etc, 
- and their properties can be mark as coordinates in an N dimentional vector space. Lets take an real word scenarion where we have to find five cars which share same or similar specs of a candidate car, or an other scenario would
- be to show the best range of mobile phones based on an input criterias like price, cpu, memmory etc. In both these scenarios we can populate the result by matching the input candidate with all other etities in the collection,
- by equating their properies or comparing the properies against a range. This kind of searching approch is called Fullscan search, fullscan is fine if the collection is considerably small, say a 100 - 1000 entities in a collection.
- But as collection increases the time complexity (timecomplexity = n) of the process will be increased linearly, hence this approch is not ideal in the case of 100K or 5M entity collecion. 
+An alternative way for searching items in a collection against the full scan method. In this method, all entities are treated as vectors and their properties/attributes are taken as coordinates of the same. 
+The vectors are plotted/arranged in a vector space (Euclidean plain) the closest the vectors are, they share similar property. 
+In real-world scenarios, these vectors can be any entity say a car, person, mobile phone etc, and their properties can be marked as coordinates in an N-dimensional vector space. 
+Let's take a real-world scenario where we have to find five cars which share same or similar specs of a candidate car, or another scenario would be to display the best range of mobile phones based on input criteria like price, CPU, memory etc. 
+In both these scenarios, we can populate the result by matching the input candidate with all other entities in the collection, by equating their properties or comparing the properties against a range.
+ This kind of searching approach is called Fullscan search, full-scan is fine if the collection is considerably small, say a 100 - 1000 entities in a collection.
+ But as collection increases the time complexity (time complexity = n) of the process will be increased linearly, hence this approach is not ideal in the case of 100K or 5M entity collection. 
 
-  either comparing  
-   one million cars   
+ Time complexity = O(d) + O(n/d) + O(1)
+ 
 
 ### Prerequisites
 
