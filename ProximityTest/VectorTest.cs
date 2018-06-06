@@ -292,7 +292,7 @@ namespace ProximityTest
         }
 
         [TestMethod]
-        public void FindFail()
+        public void FindFailed()
         {
             _carList.Add(new car() { odometer = 1000, year = 2001, price = 5500 });
             _carList.Add(new car() { odometer = 2000, year = 2000, price = 5000 });
