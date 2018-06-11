@@ -24,8 +24,6 @@
  where as possible.
  
 
-What things you need to install the software and how to install them
-
 ## Integration
 
 This project is build under .Net Framework 4.0 client profile so it will integrate with projects that are build using .Net framework 4.0 and above.
